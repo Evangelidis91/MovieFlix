@@ -5,22 +5,18 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
 
-class AuthInterceptor @Inject constructor() : Interceptor {
+/** Appends the TMDB api_key parameter to every outgoing network request. */
+class ApiKeyInterceptor @Inject constructor() : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        val originalUrl = originalRequest.url
-
-        val urlWithApiKey = originalUrl.newBuilder()
+        val newUrl = originalRequest.url.newBuilder()
             .addQueryParameter("api_key", NetworkConstants.API_KEY)
             .build()
 
-        val authenticatedRequest = originalRequest.newBuilder()
-            .url(urlWithApiKey)
-            .addHeader("Accept", "application/json")
+        val newRequest = originalRequest.newBuilder()
+            .url(newUrl)
             .build()
 
-        return chain.proceed(authenticatedRequest)
+        return chain.proceed(newRequest)
     }
-
-
 }
