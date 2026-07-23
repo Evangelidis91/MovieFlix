@@ -1,5 +1,7 @@
 package com.evangelidis.movieflix.presentation.home
 
+import kotlinx.collections.immutable.ImmutableList
+
 /** UI Model - Ready to be rendered by Compose */
 data class UiMovie(
     val id: Int,
@@ -17,7 +19,7 @@ data class UiMovie(
 sealed interface HomeScreenState {
     data object Loading : HomeScreenState
     data class Content(
-        val movies: List<UiMovie>,
+        val movies: ImmutableList<UiMovie>,
         val isRefreshing: Boolean = false,
         val isLoadingNextPage: Boolean = false,
         val isOffline: Boolean = false,

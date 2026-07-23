@@ -33,12 +33,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.evangelidis.movieflix.presentation.home.MovieCard
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
-/**
- * Stateful entry point. Resolves the HiltViewModel and wires its plain
- * public functions (retry, toggleFavorite) directly to the UI callbacks
- * below - no sealed Action/onAction dispatcher, per MVVM.
- */
 @Composable
 fun DetailsRoute(
     onBackClick: () -> Unit,
@@ -65,7 +62,6 @@ fun DetailsRoute(
     )
 }
 
-/** Pure, Hilt-free composable - testable by passing a fake DetailsScreenState directly. */
 @Composable
 fun DetailsScreen(
     uiState: DetailsScreenState,
@@ -355,25 +351,25 @@ fun DetailsContentPreview() {
         DetailsContent(
             movie = UiMovieDetails(
                 id = 1,
-                title = "Inception",
-                overview = "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                title = "Turbo Kid",
+                overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
                 backdropUrl = null,
                 posterUrl = null,
-                releaseDateFormatted = "Jul 16, 2010",
-                ratingFormatted = "8.4",
-                runtimeFormatted = "2h 28m",
-                genres = listOf("Action", "Sci-Fi", "Adventure"),
-                homepageUrl = "https://www.warnerbros.com/movies/inception",
+                releaseDateFormatted = "Aug 28, 2015",
+                ratingFormatted = "6.7",
+                runtimeFormatted = "1h 33m",
+                genres = listOf("Action", "Adventure", "Comedy", "Sci-Fi").toImmutableList(),
+                homepageUrl = "",
                 isFavorite = true,
                 isShareable = true,
                 cast = listOf(
-                    UiCastMember(1, "Leonardo DiCaprio", "Cobb", null),
-                    UiCastMember(2, "Joseph Gordon-Levitt", "Arthur", null)
-                ),
+                    UiCastMember(1, "Munro Chambers", "The Kid", null),
+                    UiCastMember(2, "Laurence Leboeuf", "Apple", null)
+                ).toImmutableList(),
                 reviews = listOf(
-                    UiReview("r1", "John Doe", null, "9.0", "A masterpiece of modern cinema!")
-                ),
-                similarMovies = emptyList()
+                    UiReview("r1", "Kostas", null, "9.0", "A masterpiece of modern cinema!")
+                ).toImmutableList(),
+                similarMovies = persistentListOf()
             ),
             onFavoriteClick = {},
             onSimilarMovieClick = {}

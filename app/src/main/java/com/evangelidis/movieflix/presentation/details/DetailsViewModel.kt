@@ -14,6 +14,7 @@ import com.evangelidis.movieflix.presentation.toDisplayDate
 import com.evangelidis.movieflix.presentation.toRatingText
 import com.evangelidis.movieflix.presentation.toRuntimeText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -99,7 +100,7 @@ class DetailsViewModel @Inject constructor(
             releaseDateFormatted = releaseDate.toDisplayDate(),
             ratingFormatted = voteAverage.toRatingText(),
             runtimeFormatted = runtimeMinutes.toRuntimeText(),
-            genres = genres,
+            genres = genres.toImmutableList(),
             homepageUrl = homepageUrl,
             isFavorite = id in favorites,
             isShareable = isShareable,
@@ -110,7 +111,7 @@ class DetailsViewModel @Inject constructor(
                     character = member.character,
                     profileUrl = member.profileUrl
                 )
-            },
+            }.toImmutableList(),
             reviews = reviews.map { review ->
                 UiReview(
                     id = review.id,
@@ -119,7 +120,7 @@ class DetailsViewModel @Inject constructor(
                     ratingFormatted = review.rating?.toRatingText(),
                     content = review.content
                 )
-            },
+            }.toImmutableList(),
             similarMovies = similarMovies.map { similar ->
                 UiMovie(
                     id = similar.id,
@@ -132,7 +133,7 @@ class DetailsViewModel @Inject constructor(
                     voteAverage = similar.voteAverage,
                     isFavorite = similar.id in favorites
                 )
-            }
+            }.toImmutableList()
         )
     }
 }
