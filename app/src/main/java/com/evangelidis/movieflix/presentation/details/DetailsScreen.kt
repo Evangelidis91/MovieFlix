@@ -1,0 +1,372 @@
+package com.evangelidis.movieflix.presentation.details
+
+import android.content.Intent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import com.evangelidis.movieflix.presentation.home.MovieCard
+import com.evangelidis.movieflix.presentation.home.UiMovie
+
+@Composable
+fun DetailsRoute(
+    onBackClick: () -> Unit,
+    onSimilarMovieClick: (Int) -> Unit,
+    viewModel: DetailsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    DetailsScreen(
+        uiState = uiState,
+        onAction = { action ->
+            when (action) {
+                DetailsAction.BackClick -> onBackClick()
+                is DetailsAction.SimilarMovieClick -> onSimilarMovieClick(action.movieId)
+                DetailsAction.ShareClick -> {
+                    val movieState = uiState
+                    if (movieState is DetailsScreenState.Content) {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, movieState.movie.title)
+                            putExtra(Intent.EXTRA_TEXT, movieState.movie.homepageUrl)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share Movie"))
+                    }
+                }
+                else -> viewModel.onAction(action)
+            }
+        }
+    )
+}
+
+@Composable
+fun DetailsScreen(
+    uiState: DetailsScreenState,
+    onAction: (DetailsAction) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .height(56.dp)
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { onAction(DetailsAction.BackClick) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+
+                if (uiState is DetailsScreenState.Content && uiState.movie.isShareable) {
+                    IconButton(onClick = { onAction(DetailsAction.ShareClick) }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share"
+                        )
+                    }
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when (uiState) {
+                is DetailsScreenState.Loading -> CircularProgressIndicator()
+
+                is DetailsScreenState.Error -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Text(text = "Something went wrong", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(4.dp))
+                        Text(text = uiState.message, color = Color.Gray)
+                        Spacer(Modifier.height(16.dp))
+                        Button(onClick = { onAction(DetailsAction.Retry) }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+
+                is DetailsScreenState.Content -> {
+                    DetailsContent(
+                        movie = uiState.movie,
+                        onAction = onAction
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DetailsContent(
+    movie: UiMovieDetails,
+    onAction: (DetailsAction) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Image Header with Favorite Overlay
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+            AsyncImage(
+                model = movie.backdropUrl ?: movie.posterUrl,
+                contentDescription = movie.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            IconButton(
+                onClick = { onAction(DetailsAction.ToggleFavorite) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(
+                    imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = if (movie.isFavorite) Color.Red else Color.White
+                )
+            }
+        }
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Title
+            Text(
+                text = movie.title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Genres
+            if (movie.genres.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(items = movie.genres, key = { it }) { genre ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = genre,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Date / Runtime / Rating
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = movie.releaseDateFormatted, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(text = movie.runtimeFormatted, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = movie.ratingFormatted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Overview
+            Text(text = "Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text(text = movie.overview, style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(Modifier.height(24.dp))
+
+            // Cast
+            if (movie.cast.isNotEmpty()) {
+                Text(text = "Cast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(items = movie.cast, key = { it.id }) { member ->
+                        CastMemberCard(member = member)
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // Reviews (Capped at max 3 items, rendered in Column to avoid nested scroll)
+            if (movie.reviews.isNotEmpty()) {
+                Text(text = "Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                movie.reviews.forEach { review ->
+                    ReviewCard(review = review)
+                    Spacer(Modifier.height(8.dp))
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            // Similar Movies (Capped at max 6 items)
+            if (movie.similarMovies.isNotEmpty()) {
+                Text(text = "Similar Movies", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(items = movie.similarMovies, key = { it.id }) { similar ->
+                        Box(modifier = Modifier.width(220.dp)) {
+                            MovieCard(
+                                movie = similar,
+                                onClick = { onAction(DetailsAction.SimilarMovieClick(similar.id)) },
+                                onFavoriteClick = { onAction(DetailsAction.ToggleFavorite) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CastMemberCard(member: UiCastMember) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(80.dp)
+    ) {
+        AsyncImage(
+            model = member.profileUrl,
+            contentDescription = member.name,
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = member.name,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = member.character,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun ReviewCard(review: UiReview) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = review.authorName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                review.ratingFormatted?.let {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(2.dp))
+                        Text(text = it, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = review.content,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+// Previews
+@Preview(showBackground = true)
+@Composable
+fun DetailsContentPreview() {
+    MaterialTheme {
+        DetailsContent(
+            movie = UiMovieDetails(
+                id = 1,
+                title = "Inception",
+                overview = "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                backdropUrl = null,
+                posterUrl = null,
+                releaseDateFormatted = "Jul 16, 2010",
+                ratingFormatted = "8.4",
+                runtimeFormatted = "2h 28m",
+                genres = listOf("Action", "Sci-Fi", "Adventure"),
+                homepageUrl = "https://www.warnerbros.com/movies/inception",
+                isFavorite = true,
+                isShareable = true,
+                cast = listOf(
+                    UiCastMember(1, "Leonardo DiCaprio", "Cobb", null),
+                    UiCastMember(2, "Joseph Gordon-Levitt", "Arthur", null)
+                ),
+                reviews = listOf(
+                    UiReview("r1", "John Doe", null, "9.0", "A masterpiece of modern cinema!")
+                ),
+                similarMovies = emptyList()
+            ),
+            onAction = {}
+        )
+    }
+}
