@@ -23,12 +23,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Classic MVVM: a single StateFlow the UI renders from, plus plain
+ * callable functions (retry, toggleFavorite) - no sealed Action
+ * hierarchy and no onAction() dispatcher, unlike HomeViewModel's MVI.
+ */
 @HiltViewModel
 class DetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: MovieRepository,
     private val favoritesDataStore: FavoritesDataStore
-): ViewModel(){
+) : ViewModel() {
 
     private val movieId: Int = savedStateHandle.toRoute<Route.Details>().movieId
 
@@ -38,25 +43,30 @@ class DetailsViewModel @Inject constructor(
     val uiState: StateFlow<DetailsScreenState> = combine(
         _movieDetailsResult,
         favoriteIds
-    ) {result, favorites ->
+    ) { result, favorites ->
         buildScreenState(result, favorites)
     }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        DetailsScreenState.Loading
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = DetailsScreenState.Loading
     )
 
     init {
         loadDetails()
     }
 
-    fun onAction(action: DetailsAction) {
-        when (action) {
-            DetailsAction.Retry -> loadDetails()
-            DetailsAction.ToggleFavorite -> toggleFavorite()
-            DetailsAction.BackClick, DetailsAction.ShareClick, is DetailsAction.SimilarMovieClick -> {
-                // Handled directly in Compose / Navigation
-            }
+    fun retry() = loadDetails()
+
+    /**
+     * Takes an explicit [movieId] rather than always toggling this
+     * screen's own movie. Handles favoriting either the main movie
+     * or any card in the Similar Movies row.
+     */
+    fun toggleFavorite(movieId: Int) {
+        viewModelScope.launch {
+            val current = favoriteIds.first()
+            val updated = if (movieId in current) current - movieId else current + movieId
+            favoritesDataStore.setFavorites(updated)
         }
     }
 
@@ -64,14 +74,6 @@ class DetailsViewModel @Inject constructor(
         viewModelScope.launch {
             _movieDetailsResult.value = null
             _movieDetailsResult.value = repository.getMovieDetails(movieId)
-        }
-    }
-
-    private fun toggleFavorite() {
-        viewModelScope.launch {
-            val current = favoriteIds.first()
-            val updated = if (movieId in current) current - movieId else current + movieId
-            favoritesDataStore.setFavorites(updated)
         }
     }
 
@@ -133,8 +135,4 @@ class DetailsViewModel @Inject constructor(
             }
         )
     }
-
-
-
-
 }

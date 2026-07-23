@@ -1,10 +1,9 @@
-package com.evangelidis.movieflix.data.local.dao
+package com.evangelidis.movieflix.data.local
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
-import com.evangelidis.movieflix.data.local.MovieEntity
 
 @Dao
 interface MovieDao {
@@ -18,7 +17,7 @@ interface MovieDao {
     @Query("DELETE FROM cached_movies")
     suspend fun clearAll()
 
-    /** Atomically replaces page 1 cache with new results */
+    /** Automatically replaces all data with new results */
     @Transaction
     suspend fun replaceAll(movies: List<MovieEntity>) {
         clearAll()

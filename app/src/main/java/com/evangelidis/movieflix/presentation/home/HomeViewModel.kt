@@ -1,7 +1,5 @@
 package com.evangelidis.movieflix.presentation.home
 
-import androidx.compose.ui.graphics.Path.Companion.combine
-import androidx.compose.ui.text.style.TextDecoration.Companion.combine
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.evangelidis.movieflix.data.local.FavoritesDataStore
@@ -163,6 +161,4 @@ class HomeViewModel @Inject constructor(
                 isFavorite = domain.id in favorites
             )
         }
-
-
 }

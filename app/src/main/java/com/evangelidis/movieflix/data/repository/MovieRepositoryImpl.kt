@@ -1,6 +1,6 @@
 package com.evangelidis.movieflix.data.repository
 
-import com.evangelidis.movieflix.data.local.dao.MovieDao
+import com.evangelidis.movieflix.data.local.MovieDao
 import com.evangelidis.movieflix.data.mapper.toCachedEntity
 import com.evangelidis.movieflix.data.mapper.toDomain
 import com.evangelidis.movieflix.data.mapper.toMoviesPage
@@ -59,7 +59,7 @@ class MovieRepositoryImpl @Inject constructor(
     override suspend fun getMovieDetails(movieId: Int): DataResult<MovieDetails> =
         try {
             coroutineScope {
-                // Execute details, reviews, and similar requests concurrently
+                // Execute details, reviews, and similar requests
                 val detailsDeferred = async { api.getMovieDetails(movieId) }
                 val reviewsDeferred = async { runCatching { api.getMovieReviews(movieId) } }
                 val similarDeferred = async { runCatching { api.getSimilarMovies(movieId) } }

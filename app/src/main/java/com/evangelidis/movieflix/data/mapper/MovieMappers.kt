@@ -1,22 +1,31 @@
 package com.evangelidis.movieflix.data.mapper
 
+import com.evangelidis.movieflix.data.NetworkConstants.IMAGE_BASE_URL
 import com.evangelidis.movieflix.data.local.MovieEntity
 import com.evangelidis.movieflix.data.remote.dto.*
 import com.evangelidis.movieflix.domain.model.*
 
-private const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
+/**
+ * Mappers to convert between Network DTOs, Room Entities, and Domain Models.
+ */
 
-private fun String?.toTmdbUrl(size: String = "w780"): String? {
+private const val BACKDROP_SIZE = "w780"
+private const val POSTER_SIZE = "w342"
+private const val PROFILE_SIZE = "w185"
+private const val MAX_SIMILAR_MOVIES = 6
+private const val MAX_REVIEWS = 3
+
+private fun String?.toTmdbUrl(size: String = BACKDROP_SIZE): String? {
     return if (!this.isNullOrBlank()) "$IMAGE_BASE_URL$size$this" else null
 }
 
-/** Converts raw API DTOs into clean domain models used by the rest of the app. */
+/** Converts raw API DTOs into clean domain models. */
 fun MovieDto.toDomain(): Movie = Movie(
     id = id,
     title = title,
     overview = overview,
-    backdropUrl = backdropPath.toTmdbUrl("w780"),
-    posterUrl = posterPath.toTmdbUrl("w342"),
+    backdropUrl = backdropPath.toTmdbUrl(),
+    posterUrl = posterPath.toTmdbUrl(POSTER_SIZE),
     releaseDate = releaseDate,
     voteAverage = voteAverage
 )
@@ -27,9 +36,9 @@ fun MoviePageResponseDto.toMoviesPage(): MoviesPage = MoviesPage(
     totalPages = totalPages
 )
 
-/** Enforces the assignment's "up to 6" similar-movies cap */
-fun MoviePageResponseDto.toSimilarMovies(limit: Int = 6): List<Movie> =
-    results.take(limit).map { it.toDomain() }
+/** Get 6 similar movies */
+fun MoviePageResponseDto.toSimilarMovies(): List<Movie> =
+    results.take(MAX_SIMILAR_MOVIES).map { it.toDomain() }
 
 fun MovieDetailsDto.toDomain(
     reviews: List<Review>,
@@ -38,8 +47,8 @@ fun MovieDetailsDto.toDomain(
     id = id,
     title = title,
     overview = overview,
-    backdropUrl = backdropPath.toTmdbUrl("w780"),
-    posterUrl = posterPath.toTmdbUrl("w342"),
+    backdropUrl = backdropPath.toTmdbUrl(),
+    posterUrl = posterPath.toTmdbUrl(POSTER_SIZE),
     releaseDate = releaseDate,
     voteAverage = voteAverage,
     runtimeMinutes = runtime,
@@ -54,22 +63,22 @@ fun CastDto.toDomain(): CastMember = CastMember(
     id = id,
     name = name,
     character = character,
-    profileUrl = profilePath.toTmdbUrl("w185")
+    profileUrl = profilePath.toTmdbUrl(PROFILE_SIZE)
 )
 
 fun ReviewDto.toDomain(): Review = Review(
     id = id,
     authorName = author,
-    avatarUrl = authorDetails?.avatarPath.toTmdbUrl("w185"),
+    avatarUrl = authorDetails?.avatarPath.toTmdbUrl(PROFILE_SIZE),
     rating = authorDetails?.rating,
     content = content
 )
 
-/** Enforces the assignment's "up to 3" reviews cap */
-fun ReviewsResponseDto.toDomain(limit: Int = 3): List<Review> =
-    results.take(limit).map { it.toDomain() }
+/** Get 3 reviews */
+fun ReviewsResponseDto.toDomain(): List<Review> =
+    results.take(MAX_REVIEWS).map { it.toDomain() }
 
-// Room Mappers
+/** Room Mappers */
 fun MovieEntity.toDomain(): Movie = Movie(
     id = id,
     title = title,
