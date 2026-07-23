@@ -13,6 +13,7 @@ import com.evangelidis.movieflix.domain.repository.MovieRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /** Fetch movies data and wraps the results in DataResult (Success or Error). */
 class MovieRepositoryImpl @Inject constructor(
@@ -48,9 +49,11 @@ class MovieRepositoryImpl @Inject constructor(
                         )
                     )
                 } else {
+                    if (e is CancellationException) throw e
                     DataResult.Error(e)
                 }
             } else {
+                if (e is CancellationException) throw e
                 DataResult.Error(e)
             }
         }
@@ -79,6 +82,7 @@ class MovieRepositoryImpl @Inject constructor(
                 DataResult.Success(domainModel)
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             DataResult.Error(e)
         }
 }

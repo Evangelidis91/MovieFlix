@@ -65,9 +65,7 @@ class DetailsViewModel @Inject constructor(
      */
     fun toggleFavorite(movieId: Int) {
         viewModelScope.launch {
-            val current = favoriteIds.first()
-            val updated = if (movieId in current) current - movieId else current + movieId
-            favoritesDataStore.setFavorites(updated)
+            favoritesDataStore.setFavorites(movieId)
         }
     }
 
