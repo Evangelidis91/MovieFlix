@@ -1,6 +1,7 @@
 package com.evangelidis.movieflix.presentation.details
 
 import com.evangelidis.movieflix.presentation.home.UiMovie
+import kotlinx.collections.immutable.ImmutableList
 
 data class UiCastMember(
     val id: Int,
@@ -26,13 +27,13 @@ data class UiMovieDetails(
     val releaseDateFormatted: String,
     val ratingFormatted: String,
     val runtimeFormatted: String,
-    val genres: List<String>,
+    val genres: ImmutableList<String>,
     val homepageUrl: String?,
     val isFavorite: Boolean,
     val isShareable: Boolean,
-    val cast: List<UiCastMember>,
-    val reviews: List<UiReview>,
-    val similarMovies: List<UiMovie>
+    val cast: ImmutableList<UiCastMember>,
+    val reviews: ImmutableList<UiReview>,
+    val similarMovies: ImmutableList<UiMovie>
 )
 
 /** Every possible UI state for the Details Screen */

@@ -10,6 +10,7 @@ import com.evangelidis.movieflix.domain.repository.MovieRepository
 import com.evangelidis.movieflix.presentation.toDisplayDate
 import com.evangelidis.movieflix.presentation.toRatingText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -123,7 +124,7 @@ class HomeViewModel @Inject constructor(
                     HomeScreenState.Error(result.throwable.message ?: "Failed to get data")
                 } else {
                     HomeScreenState.Content(
-                        movies = paginatedMovies.toUiModels(favorites),
+                        movies = paginatedMovies.toUiModels(favorites).toImmutableList(),
                         isRefreshing = isRefreshing,
                         isLoadingNextPage = isLoadingNextPage
                     )
@@ -135,7 +136,7 @@ class HomeViewModel @Inject constructor(
                     HomeScreenState.Empty
                 } else {
                     HomeScreenState.Content(
-                        movies = uiMovies,
+                        movies = uiMovies.toImmutableList(),
                         isRefreshing = isRefreshing,
                         isLoadingNextPage = isLoadingNextPage,
                         isOffline = result.data.isFromCache,
