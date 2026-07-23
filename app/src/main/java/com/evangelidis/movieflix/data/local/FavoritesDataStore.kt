@@ -16,7 +16,7 @@ private val Context.dataStore by preferencesDataStore(name = "favorites_prefs")
 
 interface FavoritesDataStore {
     val favoriteMovieIds: Flow<Set<Int>>
-    suspend fun setFavorites(ids: Set<Int>)
+    suspend fun setFavorites(movieId: Int)
 }
 
 @Singleton
@@ -30,9 +30,16 @@ class FavoritesDataStoreImpl @Inject constructor(
         prefs[favoritesKey]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
     }
 
-    override suspend fun setFavorites(ids: Set<Int>) {
+    override suspend fun setFavorites(movieId: Int) {
         context.dataStore.edit { prefs ->
-            prefs[favoritesKey] = ids.map { it.toString() }.toSet()
+            val currentIds = prefs[favoritesKey].orEmpty()
+            val idString = movieId.toString()
+
+            prefs[favoritesKey] = if (idString in currentIds) {
+                currentIds - idString
+            } else {
+                currentIds + idString
+            }
         }
     }
 }
