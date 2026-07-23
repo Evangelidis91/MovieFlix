@@ -2,7 +2,19 @@ package com.evangelidis.movieflix.presentation.details
 
 import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +27,15 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -115,9 +135,13 @@ fun DetailsScreen(
                         modifier = Modifier.padding(24.dp)
                     ) {
                         Text(text = "Something went wrong", style = MaterialTheme.typography.titleMedium)
+
                         Spacer(Modifier.height(4.dp))
+
                         Text(text = uiState.message, color = Color.Gray)
+
                         Spacer(Modifier.height(16.dp))
+
                         Button(onClick = onRetry) {
                             Text("Retry")
                         }
@@ -150,7 +174,7 @@ fun DetailsContent(
         // Image Header with Favorite Overlay
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             AsyncImage(
-                model = movie.backdropUrl ?: movie.posterUrl,
+                model = movie.imageUrl,
                 contentDescription = movie.title,
                 placeholder = ColorPainter(Color(0xFF2B2B2B)),
                 error = ColorPainter(Color(0xFF2B2B2B)),
@@ -208,8 +232,18 @@ fun DetailsContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = movie.releaseDateFormatted, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-                Text(text = movie.runtimeFormatted, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(
+                    text = movie.releaseDateFormatted,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Text(
+                    text = movie.runtimeFormatted,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Filled.Star,
@@ -229,16 +263,31 @@ fun DetailsContent(
             Spacer(Modifier.height(16.dp))
 
             // Overview
-            Text(text = "Overview", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Overview",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
             Spacer(Modifier.height(4.dp))
-            Text(text = movie.overview, style = MaterialTheme.typography.bodyMedium)
+
+            Text(
+                text = movie.overview,
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             Spacer(Modifier.height(24.dp))
 
             // Cast
             if (movie.cast.isNotEmpty()) {
-                Text(text = "Cast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Cast",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Spacer(Modifier.height(8.dp))
+
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(items = movie.cast, key = { it.id }) { member ->
                         CastMemberCard(member = member)
@@ -249,19 +298,33 @@ fun DetailsContent(
 
             // Reviews (Capped at max 3 items)
             if (movie.reviews.isNotEmpty()) {
-                Text(text = "Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Reviews",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Spacer(Modifier.height(8.dp))
+
                 movie.reviews.forEach { review ->
                     ReviewCard(review = review)
+
                     Spacer(Modifier.height(8.dp))
                 }
+
                 Spacer(Modifier.height(16.dp))
             }
 
             // Similar Movies (Capped at max 6 items)
             if (movie.similarMovies.isNotEmpty()) {
-                Text(text = "Similar Movies", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Similar Movies",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Spacer(Modifier.height(8.dp))
+
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(items = movie.similarMovies, key = { it.id }) { similar ->
                         Box(modifier = Modifier.width(220.dp)) {
@@ -323,16 +386,33 @@ fun ReviewCard(review: UiReview) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = review.authorName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    text = review.authorName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
                 review.ratingFormatted?.let {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(14.dp)
+                        )
+
                         Spacer(Modifier.width(2.dp))
-                        Text(text = it, style = MaterialTheme.typography.labelSmall)
+
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelSmall
+                        )
                     }
                 }
             }
+
             Spacer(Modifier.height(6.dp))
+
             Text(
                 text = review.content,
                 style = MaterialTheme.typography.bodySmall,
@@ -353,8 +433,7 @@ fun DetailsContentPreview() {
                 id = 1,
                 title = "Turbo Kid",
                 overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
-                backdropUrl = null,
-                posterUrl = null,
+                imageUrl = null,
                 releaseDateFormatted = "Aug 28, 2015",
                 ratingFormatted = "6.7",
                 runtimeFormatted = "1h 33m",
@@ -367,7 +446,7 @@ fun DetailsContentPreview() {
                     UiCastMember(2, "Laurence Leboeuf", "Apple", null)
                 ).toImmutableList(),
                 reviews = listOf(
-                    UiReview("r1", "Kostas", null, "9.0", "A masterpiece of modern cinema!")
+                    UiReview("r1", "Kostas", "9.0", "A masterpiece of modern cinema!")
                 ).toImmutableList(),
                 similarMovies = persistentListOf()
             ),

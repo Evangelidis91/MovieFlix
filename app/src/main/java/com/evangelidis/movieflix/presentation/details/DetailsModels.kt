@@ -13,7 +13,6 @@ data class UiCastMember(
 data class UiReview(
     val id: String,
     val authorName: String,
-    val avatarUrl: String?,
     val ratingFormatted:String?,
     val content: String
 )
@@ -22,8 +21,7 @@ data class UiMovieDetails(
     val id: Int,
     val title: String,
     val overview: String,
-    val backdropUrl: String?,
-    val posterUrl: String?,
+    val imageUrl: String?,
     val releaseDateFormatted: String,
     val ratingFormatted: String,
     val runtimeFormatted: String,

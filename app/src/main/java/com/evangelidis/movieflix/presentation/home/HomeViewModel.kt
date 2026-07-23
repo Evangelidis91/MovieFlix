@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -52,13 +51,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onAction(action: HomeAction) {
-        when(action) {
+        when (action) {
             HomeAction.LoadInitial -> loadInitial()
             HomeAction.Refresh -> refresh()
             HomeAction.LoadNextPage -> loadNextPage()
             HomeAction.Retry -> loadInitial()
             is HomeAction.ToggleFavorite -> toggleFavorite(action.movieId)
-            is HomeAction.MovieClick -> {  }
         }
     }
 
@@ -96,7 +94,7 @@ class HomeViewModel @Inject constructor(
             if (page == 1) {
                 _paginatedMovies.value = result.data.movies
             } else {
-                _paginatedMovies.value = _paginatedMovies.value + result.data.movies
+                _paginatedMovies.value += result.data.movies
             }
         }
     }
@@ -113,10 +111,10 @@ class HomeViewModel @Inject constructor(
         isRefreshing: Boolean,
         isLoadingNextPage: Boolean,
         paginatedMovies: List<Movie>
-    ) : HomeScreenState {
+    ): HomeScreenState {
         if (result == null) return HomeScreenState.Loading
 
-        return when(result) {
+        return when (result) {
             is DataResult.Error -> {
                 if (paginatedMovies.isEmpty()) {
                     HomeScreenState.Error(result.throwable.message ?: "Failed to get data")
@@ -128,6 +126,7 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             }
+
             is DataResult.Success -> {
                 val uiMovies = paginatedMovies.toUiModels(favorites)
                 if (uiMovies.isEmpty()) {
@@ -151,9 +150,7 @@ class HomeViewModel @Inject constructor(
             UiMovie(
                 id = domain.id,
                 title = domain.title,
-                overview = domain.overview,
-                backdropUrl = domain.backdropUrl,
-                posterUrl = domain.posterUrl,
+                imageUrl = domain.imageUrl,
                 releaseDateFormatted = domain.releaseDate.toDisplayDate(),
                 ratingFormatted = domain.voteAverage.toRatingText(),
                 voteAverage = domain.voteAverage,

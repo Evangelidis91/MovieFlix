@@ -2,15 +2,23 @@ package com.evangelidis.movieflix.data.mapper
 
 import com.evangelidis.movieflix.data.NetworkConstants.IMAGE_BASE_URL
 import com.evangelidis.movieflix.data.local.MovieEntity
-import com.evangelidis.movieflix.data.remote.dto.*
-import com.evangelidis.movieflix.domain.model.*
+import com.evangelidis.movieflix.data.remote.dto.CastDto
+import com.evangelidis.movieflix.data.remote.dto.MovieDetailsDto
+import com.evangelidis.movieflix.data.remote.dto.MovieDto
+import com.evangelidis.movieflix.data.remote.dto.MoviePageResponseDto
+import com.evangelidis.movieflix.data.remote.dto.ReviewDto
+import com.evangelidis.movieflix.data.remote.dto.ReviewsResponseDto
+import com.evangelidis.movieflix.domain.model.CastMember
+import com.evangelidis.movieflix.domain.model.Movie
+import com.evangelidis.movieflix.domain.model.MovieDetails
+import com.evangelidis.movieflix.domain.model.MoviesPage
+import com.evangelidis.movieflix.domain.model.Review
 
 /**
  * Mappers to convert between Network DTOs, Room Entities, and Domain Models.
  */
 
-private const val BACKDROP_SIZE = "w780"
-private const val POSTER_SIZE = "w342"
+private const val BACKDROP_SIZE = "w500"
 private const val PROFILE_SIZE = "w185"
 private const val MAX_SIMILAR_MOVIES = 6
 private const val MAX_REVIEWS = 3
@@ -23,9 +31,7 @@ private fun String?.toTmdbUrl(size: String = BACKDROP_SIZE): String? {
 fun MovieDto.toDomain(): Movie = Movie(
     id = id,
     title = title,
-    overview = overview,
-    backdropUrl = backdropPath.toTmdbUrl(),
-    posterUrl = posterPath.toTmdbUrl(POSTER_SIZE),
+    imageUrl = backdropPath.toTmdbUrl(),
     releaseDate = releaseDate,
     voteAverage = voteAverage
 )
@@ -47,8 +53,7 @@ fun MovieDetailsDto.toDomain(
     id = id,
     title = title,
     overview = overview,
-    backdropUrl = backdropPath.toTmdbUrl(),
-    posterUrl = posterPath.toTmdbUrl(POSTER_SIZE),
+    imageUrl = backdropPath.toTmdbUrl(),
     releaseDate = releaseDate,
     voteAverage = voteAverage,
     runtimeMinutes = runtime,
@@ -69,7 +74,6 @@ fun CastDto.toDomain(): CastMember = CastMember(
 fun ReviewDto.toDomain(): Review = Review(
     id = id,
     authorName = author,
-    avatarUrl = authorDetails?.avatarPath.toTmdbUrl(PROFILE_SIZE),
     rating = authorDetails?.rating,
     content = content
 )
@@ -82,9 +86,7 @@ fun ReviewsResponseDto.toDomain(): List<Review> =
 fun MovieEntity.toDomain(): Movie = Movie(
     id = id,
     title = title,
-    overview = overview,
-    backdropUrl = backdropUrl,
-    posterUrl = posterUrl,
+    imageUrl = imageUrl,
     releaseDate = releaseDate,
     voteAverage = voteAverage
 )
@@ -92,9 +94,7 @@ fun MovieEntity.toDomain(): Movie = Movie(
 fun Movie.toCachedEntity(position: Int): MovieEntity = MovieEntity(
     id = id,
     title = title,
-    overview = overview,
-    backdropUrl = backdropUrl,
-    posterUrl = posterUrl,
+    imageUrl = imageUrl,
     releaseDate = releaseDate,
     voteAverage = voteAverage,
     position = position

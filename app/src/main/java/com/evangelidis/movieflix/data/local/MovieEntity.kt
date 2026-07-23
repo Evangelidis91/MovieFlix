@@ -8,9 +8,7 @@ import androidx.room.PrimaryKey
 data class MovieEntity(
     @PrimaryKey val id: Int,
     val title: String,
-    val overview: String,
-    val backdropUrl: String?,
-    val posterUrl: String?,
+    val imageUrl: String?,
     val releaseDate: String?,
     val voteAverage: Double,
     val position: Int

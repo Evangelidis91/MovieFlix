@@ -4,9 +4,7 @@ package com.evangelidis.movieflix.domain.model
 data class Movie(
     val id: Int,
     val title: String,
-    val overview: String,
-    val backdropUrl: String?,
-    val posterUrl: String?,
+    val imageUrl: String?,
     val releaseDate: String?,
     val voteAverage: Double
 )

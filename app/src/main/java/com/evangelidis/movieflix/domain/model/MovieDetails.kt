@@ -5,8 +5,7 @@ data class MovieDetails(
     val id: Int,
     val title: String,
     val overview: String,
-    val backdropUrl: String?,
-    val posterUrl: String?,
+    val imageUrl: String?,
     val releaseDate: String?,
     val voteAverage: Double,
     val runtimeMinutes: Int?,
@@ -30,7 +29,6 @@ data class CastMember(
 data class Review(
     val id: String,
     val authorName: String,
-    val avatarUrl: String?,
     val rating: Double?,
     val content: String
 )

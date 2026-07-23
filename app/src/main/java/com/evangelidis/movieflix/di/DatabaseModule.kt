@@ -12,7 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Provides Room database instance and Data Access Object (DAO) dependencies.
+ * Provides Room database instance and Data Access Object dependencies.
  */
 
 @Module
