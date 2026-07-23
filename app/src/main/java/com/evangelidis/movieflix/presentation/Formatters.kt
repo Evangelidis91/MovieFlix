@@ -2,7 +2,6 @@ package com.evangelidis.movieflix.presentation
 
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.function.DoubleUnaryOperator
 
 /** Format TMDB date to display it */
 fun String?.toDisplayDate(): String {

@@ -41,12 +41,3 @@ sealed interface DetailsScreenState {
     data class Content(val movie: UiMovieDetails) : DetailsScreenState
     data class Error(val message: String) : DetailsScreenState
 }
-
-/** Actions triggered from the Details Screen */
-sealed interface DetailsAction {
-    data object ToggleFavorite : DetailsAction
-    data object ShareClick : DetailsAction
-    data object Retry : DetailsAction
-    data object BackClick : DetailsAction
-    data class SimilarMovieClick(val movieId: Int) : DetailsAction
-}

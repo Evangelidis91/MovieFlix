@@ -1,5 +1,6 @@
 package com.evangelidis.movieflix.di
 
+import com.evangelidis.movieflix.data.NetworkConstants.BASE_URL
 import com.evangelidis.movieflix.data.remote.api.TmdbApiService
 import com.evangelidis.movieflix.data.remote.interceptor.ApiKeyInterceptor
 import dagger.Module
@@ -14,11 +15,13 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import javax.inject.Singleton
 
+/**
+ * Provides networking dependencies including OkHttpClient, Retrofit, and TMDB API service.
+ */
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
-    private const val BASE_URL = "https://api.themoviedb.org/3/"
 
     @Provides
     @Singleton

@@ -2,7 +2,6 @@ package com.evangelidis.movieflix.presentation.details
 
 import android.content.Intent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -33,8 +33,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.evangelidis.movieflix.presentation.home.MovieCard
-import com.evangelidis.movieflix.presentation.home.UiMovie
 
+/**
+ * Stateful entry point. Resolves the HiltViewModel and wires its plain
+ * public functions (retry, toggleFavorite) directly to the UI callbacks
+ * below - no sealed Action/onAction dispatcher, per MVVM.
+ */
 @Composable
 fun DetailsRoute(
     onBackClick: () -> Unit,
@@ -46,31 +50,30 @@ fun DetailsRoute(
 
     DetailsScreen(
         uiState = uiState,
-        onAction = { action ->
-            when (action) {
-                DetailsAction.BackClick -> onBackClick()
-                is DetailsAction.SimilarMovieClick -> onSimilarMovieClick(action.movieId)
-                DetailsAction.ShareClick -> {
-                    val movieState = uiState
-                    if (movieState is DetailsScreenState.Content) {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, movieState.movie.title)
-                            putExtra(Intent.EXTRA_TEXT, movieState.movie.homepageUrl)
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share Movie"))
-                    }
-                }
-                else -> viewModel.onAction(action)
+        onBackClick = onBackClick,
+        onShareClick = { movie ->
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, movie.title)
+                putExtra(Intent.EXTRA_TEXT, movie.homepageUrl)
             }
-        }
+            context.startActivity(Intent.createChooser(shareIntent, "Share Movie"))
+        },
+        onFavoriteClick = viewModel::toggleFavorite,
+        onRetry = viewModel::retry,
+        onSimilarMovieClick = onSimilarMovieClick
     )
 }
 
+/** Pure, Hilt-free composable - testable by passing a fake DetailsScreenState directly. */
 @Composable
 fun DetailsScreen(
     uiState: DetailsScreenState,
-    onAction: (DetailsAction) -> Unit
+    onBackClick: () -> Unit,
+    onShareClick: (UiMovieDetails) -> Unit,
+    onFavoriteClick: (Int) -> Unit,
+    onRetry: () -> Unit,
+    onSimilarMovieClick: (Int) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -83,7 +86,7 @@ fun DetailsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { onAction(DetailsAction.BackClick) }) {
+                IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
@@ -91,7 +94,7 @@ fun DetailsScreen(
                 }
 
                 if (uiState is DetailsScreenState.Content && uiState.movie.isShareable) {
-                    IconButton(onClick = { onAction(DetailsAction.ShareClick) }) {
+                    IconButton(onClick = { onShareClick(uiState.movie) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share"
@@ -119,7 +122,7 @@ fun DetailsScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(text = uiState.message, color = Color.Gray)
                         Spacer(Modifier.height(16.dp))
-                        Button(onClick = { onAction(DetailsAction.Retry) }) {
+                        Button(onClick = onRetry) {
                             Text("Retry")
                         }
                     }
@@ -128,7 +131,8 @@ fun DetailsScreen(
                 is DetailsScreenState.Content -> {
                     DetailsContent(
                         movie = uiState.movie,
-                        onAction = onAction
+                        onFavoriteClick = onFavoriteClick,
+                        onSimilarMovieClick = onSimilarMovieClick
                     )
                 }
             }
@@ -139,7 +143,8 @@ fun DetailsScreen(
 @Composable
 fun DetailsContent(
     movie: UiMovieDetails,
-    onAction: (DetailsAction) -> Unit
+    onFavoriteClick: (Int) -> Unit,
+    onSimilarMovieClick: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -151,12 +156,14 @@ fun DetailsContent(
             AsyncImage(
                 model = movie.backdropUrl ?: movie.posterUrl,
                 contentDescription = movie.title,
+                placeholder = ColorPainter(Color(0xFF2B2B2B)),
+                error = ColorPainter(Color(0xFF2B2B2B)),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
 
             IconButton(
-                onClick = { onAction(DetailsAction.ToggleFavorite) },
+                onClick = { onFavoriteClick(movie.id) },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
@@ -164,7 +171,7 @@ fun DetailsContent(
             ) {
                 Icon(
                     imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Favorite",
+                    contentDescription = if (movie.isFavorite) "Remove from favorites" else "Add to favorites",
                     tint = if (movie.isFavorite) Color.Red else Color.White
                 )
             }
@@ -244,7 +251,7 @@ fun DetailsContent(
                 Spacer(Modifier.height(24.dp))
             }
 
-            // Reviews (Capped at max 3 items, rendered in Column to avoid nested scroll)
+            // Reviews (Capped at max 3 items)
             if (movie.reviews.isNotEmpty()) {
                 Text(text = "Reviews", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
@@ -264,8 +271,8 @@ fun DetailsContent(
                         Box(modifier = Modifier.width(220.dp)) {
                             MovieCard(
                                 movie = similar,
-                                onClick = { onAction(DetailsAction.SimilarMovieClick(similar.id)) },
-                                onFavoriteClick = { onAction(DetailsAction.ToggleFavorite) }
+                                onClick = { onSimilarMovieClick(similar.id) },
+                                onFavoriteClick = { onFavoriteClick(similar.id) }
                             )
                         }
                     }
@@ -284,6 +291,8 @@ fun CastMemberCard(member: UiCastMember) {
         AsyncImage(
             model = member.profileUrl,
             contentDescription = member.name,
+            placeholder = ColorPainter(Color(0xFF2B2B2B)),
+            error = ColorPainter(Color(0xFF2B2B2B)),
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape),
@@ -366,7 +375,8 @@ fun DetailsContentPreview() {
                 ),
                 similarMovies = emptyList()
             ),
-            onAction = {}
+            onFavoriteClick = {},
+            onSimilarMovieClick = {}
         )
     }
 }

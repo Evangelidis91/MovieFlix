@@ -16,7 +16,7 @@ data class MovieDetails(
     val reviews: List<Review> = emptyList(),
     val similarMovies: List<Movie> = emptyList()
 ) {
-    /** Per spec: Hide share button if homepage URL is null or blank */
+    /** Hide share button if homepage URL is null or blank */
     val isShareable: Boolean get() = !homepageUrl.isNullOrBlank()
 }
 

@@ -10,6 +10,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Binds DataStore implementation to its interface for managing local preferences.
+ */
+
 @Module
 @InstallIn(SingletonComponent::class)
 object DataStoreModule {

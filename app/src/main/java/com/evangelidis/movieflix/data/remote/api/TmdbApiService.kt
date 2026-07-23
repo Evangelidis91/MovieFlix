@@ -1,6 +1,6 @@
 package com.evangelidis.movieflix.data.remote.api
 
-import com.evangelidis.movieflix.data.NetworkConstants.DEFAULT_LANGUAGE
+import com.evangelidis.movieflix.data.NetworkConstants.APPEND_CREDITS
 import com.evangelidis.movieflix.data.remote.dto.MovieDetailsDto
 import com.evangelidis.movieflix.data.remote.dto.MoviePageResponseDto
 import com.evangelidis.movieflix.data.remote.dto.ReviewsResponseDto
@@ -12,29 +12,23 @@ interface TmdbApiService {
 
     @GET("movie/popular")
     suspend fun getPopularMovies(
-        @Query("page") page: Int,
-        @Query("language") language: String = DEFAULT_LANGUAGE
+        @Query("page") page: Int
     ): MoviePageResponseDto
 
     @GET("movie/{movie_id}")
     suspend fun getMovieDetails(
         @Path("movie_id") movieId: Int,
-        @Query("append_to_response") appendToResponse: String = "credits",
-        @Query("language") language: String = DEFAULT_LANGUAGE
+        @Query("append_to_response") appendToResponse: String = APPEND_CREDITS,
     ): MovieDetailsDto
 
     @GET("movie/{movie_id}/reviews")
     suspend fun getMovieReviews(
-        @Path("movie_id") movieId: Int,
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = DEFAULT_LANGUAGE
+        @Path("movie_id") movieId: Int
     ): ReviewsResponseDto
 
     @GET("movie/{movie_id}/similar")
     suspend fun getSimilarMovies(
-        @Path("movie_id") movieId: Int,
-        @Query("page") page: Int = 1,
-        @Query("language") language: String = DEFAULT_LANGUAGE
+        @Path("movie_id") movieId: Int
     ): MoviePageResponseDto
 
 }

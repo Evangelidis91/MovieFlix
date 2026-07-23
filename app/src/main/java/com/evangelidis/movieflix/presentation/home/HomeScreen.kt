@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -187,6 +188,8 @@ fun MovieCard(
                 AsyncImage(
                     model = movie.backdropUrl ?: movie.posterUrl,
                     contentDescription = movie.title,
+                    placeholder = ColorPainter(Color(0xFF2B2B2B)),
+                    error = ColorPainter(Color(0xFF2B2B2B)),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )

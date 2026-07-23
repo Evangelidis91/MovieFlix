@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Persists and reads the user's favorite movie IDs to/from disk using DataStore */
+/**
+ * Manages saving and reading the user's favorite movie IDs.
+ */
 private val Context.dataStore by preferencesDataStore(name = "favorites_prefs")
 
 interface FavoritesDataStore {

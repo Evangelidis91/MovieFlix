@@ -17,6 +17,4 @@ data class MoviesPage(
     val page: Int,
     val totalPages: Int,
     val isFromCache: Boolean = false
-) {
-    val hasMorePages: Boolean get() = page < totalPages
-}
+)

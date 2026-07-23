@@ -3,7 +3,7 @@ package com.evangelidis.movieflix.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-/** Offline snapshot of the Home screen's PAGE 1 ONLY. */
+/** Offline snapshot of the Home screen's */
 @Entity(tableName = "cached_movies")
 data class MovieEntity(
     @PrimaryKey val id: Int,
