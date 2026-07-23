@@ -18,3 +18,11 @@ fun String?.toDisplayDate(): String {
 
 /** Format rating to 1 decimal */
 fun Double.toRatingText(): String = String.format(Locale.getDefault(), "%.1f", this)
+
+/** Format movie runtime */
+fun Int?.toRuntimeText(): String {
+    if (this == null || this <=0) return ""
+    val hours = this/60
+    val mins = this % 60
+    return if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+}

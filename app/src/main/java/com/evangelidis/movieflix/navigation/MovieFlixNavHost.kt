@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.evangelidis.movieflix.presentation.details.DetailsRoute
 import com.evangelidis.movieflix.presentation.home.HomeRoute
 
 @Composable
@@ -19,6 +20,14 @@ fun MovieFlixNavHost(navController: NavHostController = rememberNavController())
         }
 
         composable<Route.Details> {
+            DetailsRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onSimilarMovieClick = { movieId ->
+                    navController.navigate(Route.Details(movieId))
+                }
+            )
         }
     }
 }
