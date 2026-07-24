@@ -7,8 +7,8 @@ import java.util.Locale
 fun String?.toDisplayDate(): String {
     if (this.isNullOrBlank()) return ""
     return try {
-        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val formatter = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
+        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val formatter = SimpleDateFormat("d MMM yyyy", Locale.US)
         parser.parse(this)?.let { formatter.format(it) } ?: this
     } catch (e: Exception){
         this
@@ -16,7 +16,10 @@ fun String?.toDisplayDate(): String {
 }
 
 /** Format rating to 1 decimal */
-fun Double.toRatingText(): String = String.format(Locale.getDefault(), "%.1f", this)
+fun Double?.toRatingText(): String {
+    if (this == null || this <= 0.0) return ""
+    return String.format(Locale.US, "%.1f", this)
+}
 
 /** Format movie runtime */
 fun Int?.toRuntimeText(): String {
