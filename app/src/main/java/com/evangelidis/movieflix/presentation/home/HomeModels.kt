@@ -9,7 +9,6 @@ data class UiMovie(
     val imageUrl: String?,
     val releaseDateFormatted: String,
     val ratingFormatted: String,
-    val voteAverage: Double,
     val isFavorite: Boolean
 )
 
