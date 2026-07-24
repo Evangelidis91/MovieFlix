@@ -92,9 +92,11 @@ class HomeViewModel @Inject constructor(
 
         if (result is DataResult.Success) {
             if (page == 1) {
-                _paginatedMovies.value = result.data.movies
+                // Clean duplicates ids from first page
+                _paginatedMovies.value = result.data.movies.distinctBy { it.id }
             } else {
-                _paginatedMovies.value += result.data.movies
+                // Safe adding new pages without duplicates ids
+                _paginatedMovies.value = (_paginatedMovies.value + result.data.movies).distinctBy { it.id }
             }
         }
     }
