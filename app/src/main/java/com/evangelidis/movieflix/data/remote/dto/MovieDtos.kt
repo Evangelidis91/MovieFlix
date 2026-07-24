@@ -14,9 +14,7 @@ data class MoviePageResponseDto(
 data class MovieDto(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String = "",
-    @SerialName("overview") val overview: String = "",
     @SerialName("backdrop_path") val backdropPath: String? = null,
-    @SerialName("poster_path") val posterPath: String? = null,
     @SerialName("release_date") val releaseDate: String? = null,
     @SerialName("vote_average") val voteAverage: Double = 0.0
 )
@@ -27,7 +25,6 @@ data class MovieDetailsDto(
     @SerialName("title") val title: String = "",
     @SerialName("overview") val overview: String = "",
     @SerialName("backdrop_path") val backdropPath: String? = null,
-    @SerialName("poster_path") val posterPath: String? = null,
     @SerialName("release_date") val releaseDate: String? = null,
     @SerialName("vote_average") val voteAverage: Double = 0.0,
     @SerialName("runtime") val runtime: Int? = null,
@@ -71,6 +68,5 @@ data class ReviewDto(
 
 @Serializable
 data class AuthorDetailsDto(
-    @SerialName("avatar_path") val avatarPath: String? = null,
     @SerialName("rating") val rating: Double? = null
 )

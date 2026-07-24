@@ -6,9 +6,7 @@ import kotlinx.collections.immutable.ImmutableList
 data class UiMovie(
     val id: Int,
     val title: String,
-    val overview: String,
-    val backdropUrl: String?,
-    val posterUrl: String?,
+    val imageUrl: String?,
     val releaseDateFormatted: String,
     val ratingFormatted: String,
     val voteAverage: Double,
@@ -38,6 +36,6 @@ sealed interface HomeAction {
     data object Refresh : HomeAction
     data object LoadNextPage : HomeAction
     data class ToggleFavorite(val movieId: Int) : HomeAction
-    data class MovieClick(val movieId: Int) : HomeAction
+    //data class MovieClick(val movieId: Int) : HomeAction
     data object Retry : HomeAction
 }

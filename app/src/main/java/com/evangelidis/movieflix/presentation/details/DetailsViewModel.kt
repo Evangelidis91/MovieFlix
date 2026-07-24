@@ -19,16 +19,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Classic MVVM: a single StateFlow the UI renders from, plus plain
- * callable functions (retry, toggleFavorite) - no sealed Action
- * hierarchy and no onAction() dispatcher, unlike HomeViewModel's MVI.
- */
 @HiltViewModel
 class DetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -58,11 +52,6 @@ class DetailsViewModel @Inject constructor(
 
     fun retry() = loadDetails()
 
-    /**
-     * Takes an explicit [movieId] rather than always toggling this
-     * screen's own movie. Handles favoriting either the main movie
-     * or any card in the Similar Movies row.
-     */
     fun toggleFavorite(movieId: Int) {
         viewModelScope.launch {
             favoritesDataStore.setFavorites(movieId)
@@ -93,8 +82,7 @@ class DetailsViewModel @Inject constructor(
             id = id,
             title = title,
             overview = overview,
-            backdropUrl = backdropUrl,
-            posterUrl = posterUrl,
+            imageUrl = imageUrl,
             releaseDateFormatted = releaseDate.toDisplayDate(),
             ratingFormatted = voteAverage.toRatingText(),
             runtimeFormatted = runtimeMinutes.toRuntimeText(),
@@ -114,7 +102,6 @@ class DetailsViewModel @Inject constructor(
                 UiReview(
                     id = review.id,
                     authorName = review.authorName,
-                    avatarUrl = review.avatarUrl,
                     ratingFormatted = review.rating?.toRatingText(),
                     content = review.content
                 )
@@ -123,9 +110,7 @@ class DetailsViewModel @Inject constructor(
                 UiMovie(
                     id = similar.id,
                     title = similar.title,
-                    overview = similar.overview,
-                    backdropUrl = similar.backdropUrl,
-                    posterUrl = similar.posterUrl,
+                    imageUrl = similar.imageUrl,
                     releaseDateFormatted = similar.releaseDate.toDisplayDate(),
                     ratingFormatted = similar.voteAverage.toRatingText(),
                     voteAverage = similar.voteAverage,
