@@ -44,7 +44,7 @@ class MovieRepositoryImpl @Inject constructor(
                         MoviesPage(
                             movies = cached.map { it.toDomain() },
                             page = 1,
-                            totalPages = 1,
+                            totalPages = 500,
                             isFromCache = true
                         )
                     )
