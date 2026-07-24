@@ -113,7 +113,6 @@ class DetailsViewModel @Inject constructor(
                     imageUrl = similar.imageUrl,
                     releaseDateFormatted = similar.releaseDate.toDisplayDate(),
                     ratingFormatted = similar.voteAverage.toRatingText(),
-                    voteAverage = similar.voteAverage,
                     isFavorite = similar.id in favorites
                 )
             }.toImmutableList()

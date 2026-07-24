@@ -264,26 +264,33 @@ fun MovieCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = movie.releaseDateFormatted,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(16.dp)
-                        )
-
-                        Spacer(Modifier.width(4.dp))
-
+                    if (movie.releaseDateFormatted.isNotEmpty()) {
                         Text(
-                            text = movie.ratingFormatted,
+                            text = movie.releaseDateFormatted,
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
+                            color = Color.Gray
                         )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    if (movie.ratingFormatted.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFC107),
+                                modifier = Modifier.size(16.dp)
+                            )
+
+                            Spacer(Modifier.width(4.dp))
+
+                            Text(
+                                text = movie.ratingFormatted,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -303,7 +310,63 @@ fun MovieCardPreview() {
                 imageUrl = null,
                 releaseDateFormatted = "Jul 16, 2010",
                 ratingFormatted = "8.4",
-                voteAverage = 8.4,
+                isFavorite = false
+            ),
+            onClick = {},
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MovieCardSavedNoRatingPreview() {
+    MaterialTheme {
+        MovieCard(
+            movie = UiMovie(
+                id = 1,
+                title = "Inception",
+                imageUrl = null,
+                releaseDateFormatted = "Jul 16, 2010",
+                ratingFormatted = "",
+                isFavorite = true
+            ),
+            onClick = {},
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MovieCardSavedLongNamePreview() {
+    MaterialTheme {
+        MovieCard(
+            movie = UiMovie(
+                id = 1,
+                title = "Inception Inception Inception Inception Inception Inception",
+                imageUrl = null,
+                releaseDateFormatted = "Jul 16, 2010",
+                ratingFormatted = "",
+                isFavorite = true
+            ),
+            onClick = {},
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MovieCardSavedNoReleaseDatePreview() {
+    MaterialTheme {
+        MovieCard(
+            movie = UiMovie(
+                id = 1,
+                title = "Inception",
+                imageUrl = null,
+                releaseDateFormatted = "",
+                ratingFormatted = "8.4",
                 isFavorite = true
             ),
             onClick = {},

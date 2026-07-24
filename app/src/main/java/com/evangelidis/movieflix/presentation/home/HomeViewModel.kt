@@ -155,7 +155,6 @@ class HomeViewModel @Inject constructor(
                 imageUrl = domain.imageUrl,
                 releaseDateFormatted = domain.releaseDate.toDisplayDate(),
                 ratingFormatted = domain.voteAverage.toRatingText(),
-                voteAverage = domain.voteAverage,
                 isFavorite = domain.id in favorites
             )
         }

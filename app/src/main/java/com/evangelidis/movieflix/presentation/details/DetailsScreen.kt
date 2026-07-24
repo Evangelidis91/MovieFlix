@@ -53,6 +53,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.evangelidis.movieflix.presentation.home.MovieCard
+import com.evangelidis.movieflix.presentation.home.UiMovie
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
@@ -134,7 +136,10 @@ fun DetailsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(24.dp)
                     ) {
-                        Text(text = "Something went wrong", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "Something went wrong",
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
                         Spacer(Modifier.height(4.dp))
 
@@ -171,8 +176,48 @@ fun DetailsContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Image Header with Favorite Overlay
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+        // Image Header, Title, Genres, Meta info & Overview
+        MovieHeaderSection(
+            movie = movie,
+            onFavoriteClick = onFavoriteClick
+        )
+
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Cast
+            if (movie.cast.isNotEmpty()) {
+                CastSection(cast = movie.cast)
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // Reviews
+            if (movie.reviews.isNotEmpty()) {
+                ReviewsSection(reviews = movie.reviews)
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // Similar Movies
+            if (movie.similarMovies.isNotEmpty()) {
+                SimilarMoviesSection(
+                    similarMovies = movie.similarMovies,
+                    onSimilarMovieClick = onSimilarMovieClick,
+                    onFavoriteClick = onFavoriteClick
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+// Movie Header & Overview Section
+@Composable
+fun MovieHeaderSection(
+    movie: UiMovieDetails,
+    onFavoriteClick: (Int) -> Unit
+) {
+    Column {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)) {
             AsyncImage(
                 model = movie.imageUrl,
                 contentDescription = movie.title,
@@ -198,7 +243,6 @@ fun DetailsContent(
         }
 
         Column(modifier = Modifier.padding(16.dp)) {
-            // Title
             Text(
                 text = movie.title,
                 style = MaterialTheme.typography.headlineSmall,
@@ -207,7 +251,6 @@ fun DetailsContent(
 
             Spacer(Modifier.height(8.dp))
 
-            // Genres
             if (movie.genres.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(items = movie.genres, key = { it }) { genre ->
@@ -226,116 +269,83 @@ fun DetailsContent(
                 Spacer(Modifier.height(12.dp))
             }
 
-            // Date / Runtime / Rating
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = movie.releaseDateFormatted,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-
-                Text(
-                    text = movie.runtimeFormatted,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
+                if (movie.releaseDateFormatted.isNotEmpty()) {
                     Text(
-                        text = movie.ratingFormatted,
+                        text = movie.releaseDateFormatted,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
+                        color = Color.Gray
                     )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                if (movie.runtimeFormatted.isNotEmpty()) {
+                    Text(
+                        text = movie.runtimeFormatted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                if (movie.ratingFormatted.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = movie.ratingFormatted,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // Overview
-            Text(
-                text = "Overview",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = movie.overview,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Cast
-            if (movie.cast.isNotEmpty()) {
+            if (movie.overview.isNotEmpty()) {
                 Text(
-                    text = "Cast",
+                    text = "Overview",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(items = movie.cast, key = { it.id }) { member ->
-                        CastMemberCard(member = member)
-                    }
-                }
-                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = movie.overview,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
+        }
+    }
+}
 
-            // Reviews (Capped at max 3 items)
-            if (movie.reviews.isNotEmpty()) {
-                Text(
-                    text = "Reviews",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+// Cast Section
+@Composable
+fun CastSection(cast: ImmutableList<UiCastMember>) {
+    Column {
+        Text(
+            text = "Cast",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
 
-                Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
 
-                movie.reviews.forEach { review ->
-                    ReviewCard(review = review)
-
-                    Spacer(Modifier.height(8.dp))
-                }
-
-                Spacer(Modifier.height(16.dp))
-            }
-
-            // Similar Movies (Capped at max 6 items)
-            if (movie.similarMovies.isNotEmpty()) {
-                Text(
-                    text = "Similar Movies",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(items = movie.similarMovies, key = { it.id }) { similar ->
-                        Box(modifier = Modifier.width(220.dp)) {
-                            MovieCard(
-                                movie = similar,
-                                onClick = { onSimilarMovieClick(similar.id) },
-                                onFavoriteClick = { onFavoriteClick(similar.id) }
-                            )
-                        }
-                    }
-                }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(items = cast, key = { it.id }) { member ->
+                CastMemberCard(member = member)
             }
         }
     }
@@ -372,6 +382,25 @@ fun CastMemberCard(member: UiCastMember) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+// Reviews Section
+@Composable
+fun ReviewsSection(reviews: ImmutableList<UiReview>) {
+    Column {
+        Text(
+            text = "Reviews",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        reviews.forEach { review ->
+            ReviewCard(review = review)
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 
@@ -423,35 +452,119 @@ fun ReviewCard(review: UiReview) {
     }
 }
 
-// Previews
+// Similar Movies Section
+@Composable
+fun SimilarMoviesSection(
+    similarMovies: ImmutableList<UiMovie>,
+    onSimilarMovieClick: (Int) -> Unit,
+    onFavoriteClick: (Int) -> Unit
+) {
+    Column {
+        Text(
+            text = "Similar Movies",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(items = similarMovies, key = { it.id }) { similar ->
+                Box(modifier = Modifier.width(220.dp)) {
+                    MovieCard(
+                        movie = similar,
+                        onClick = { onSimilarMovieClick(similar.id) },
+                        onFavoriteClick = { onFavoriteClick(similar.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// PREVIEWS
+@Preview(showBackground = true)
+@Composable
+fun MovieHeaderSectionPreview() {
+    MaterialTheme {
+        MovieHeaderSection(
+            movie = sampleMovieDetails,
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CastSectionPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CastSection(cast = sampleMovieDetails.cast)
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ReviewsSectionPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            ReviewsSection(reviews = sampleMovieDetails.reviews)
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SimilarMoviesSectionPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            SimilarMoviesSection(
+                similarMovies = persistentListOf(
+                    UiMovie(1, "Mad Max: Fury Road", null, "May 15, 2015", "8.1", true),
+                    UiMovie(2, "Waterworld", null, "Jul 28, 1995", "6.3", false)
+                ),
+                onSimilarMovieClick = {},
+                onFavoriteClick = {}
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun DetailsContentPreview() {
     MaterialTheme {
         DetailsContent(
-            movie = UiMovieDetails(
-                id = 1,
-                title = "Turbo Kid",
-                overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
-                imageUrl = null,
-                releaseDateFormatted = "Aug 28, 2015",
-                ratingFormatted = "6.7",
-                runtimeFormatted = "1h 33m",
-                genres = listOf("Action", "Adventure", "Comedy", "Sci-Fi").toImmutableList(),
-                homepageUrl = "",
-                isFavorite = true,
-                isShareable = true,
-                cast = listOf(
-                    UiCastMember(1, "Munro Chambers", "The Kid", null),
-                    UiCastMember(2, "Laurence Leboeuf", "Apple", null)
-                ).toImmutableList(),
-                reviews = listOf(
-                    UiReview("r1", "Kostas", "9.0", "A masterpiece of modern cinema!")
-                ).toImmutableList(),
-                similarMovies = persistentListOf()
-            ),
+            movie = sampleMovieDetails,
             onFavoriteClick = {},
             onSimilarMovieClick = {}
         )
     }
 }
+
+private val sampleMovieDetails = UiMovieDetails(
+    id = 1,
+    title = "Turbo Kid",
+    overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
+    imageUrl = null,
+    releaseDateFormatted = "Aug 28, 2015",
+    ratingFormatted = "6.7",
+    runtimeFormatted = "1h 33m",
+    genres = persistentListOf("Action", "Adventure", "Comedy", "Sci-Fi"),
+    homepageUrl = "",
+    isFavorite = true,
+    isShareable = true,
+    cast = persistentListOf(
+        UiCastMember(1, "Munro Chambers", "The Kid", null),
+        UiCastMember(2, "Laurence Leboeuf", "Apple", null),
+        UiCastMember(3, "Michael Ironside", "Zeus", null)
+    ),
+    reviews = persistentListOf(
+        UiReview("r1", "Kostas", "9.0", "A masterpiece of modern cinema! Nostalgic and gory fun."),
+        UiReview("r2", "Alex", "8.0", "Great synthwave soundtrack and fun action scenes.")
+    ),
+    similarMovies = persistentListOf(
+        UiMovie(1, "Mad Max: Fury Road", null, "May 15, 2015", "8.1", false)
+    )
+)
