@@ -47,11 +47,13 @@ import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.evangelidis.movieflix.R
 
 @Composable
 fun HomeRoute(
@@ -85,7 +87,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "MovieFlix",
+                    text = stringResource(R.string.app_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -107,7 +109,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(24.dp)
                     ) {
                         Text(
-                            text = "Something went wrong",
+                            text = stringResource(R.string.error_something_went_wrong),
                             style = MaterialTheme.typography.titleMedium
                         )
 
@@ -121,14 +123,14 @@ fun HomeScreen(
                         Spacer(Modifier.height(16.dp))
 
                         Button(onClick = { onAction(HomeAction.Retry) }) {
-                            Text("Retry")
+                            Text(stringResource(R.string.retry))
                         }
                     }
                 }
 
                 is HomeScreenState.Empty -> {
                     Text(
-                        text = "No movies found",
+                        text = stringResource(R.string.no_movies_found),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -168,7 +170,7 @@ fun HomeScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text(
-                                            text = "You're offline. Showing saved movies.",
+                                            text = stringResource(R.string.offline_message),
                                             color = MaterialTheme.colorScheme.onErrorContainer,
                                             modifier = Modifier.padding(12.dp),
                                             style = MaterialTheme.typography.bodySmall
@@ -242,7 +244,7 @@ fun MovieCard(
                 ) {
                     Icon(
                         imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (movie.isFavorite) "Remove from favorites" else "Add to favorites",
+                        contentDescription = if (movie.isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
                         tint = if (movie.isFavorite) Color.Red else Color.White
                     )
                 }

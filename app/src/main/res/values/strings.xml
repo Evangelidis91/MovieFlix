@@ -1,3 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MovieFlix</string>
+    <string name="app_title">MovieFlix</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="retry">Retry</string>
+    <string name="no_movies_found">No movies found</string>
+    <string name="offline_message">You\'re offline. Showing saved movies.</string>
+    <string name="back">Back</string>
+    <string name="share">Share</string>
+    <string name="share_movie">Share Movie</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="overview">Overview</string>
+    <string name="cast">Cast</string>
+    <string name="reviews">Reviews</string>
+    <string name="similar_movies">Similar Movies</string>
 </resources>
