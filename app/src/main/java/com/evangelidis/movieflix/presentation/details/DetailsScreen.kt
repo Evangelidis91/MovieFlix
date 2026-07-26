@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.evangelidis.movieflix.R
 import com.evangelidis.movieflix.presentation.home.MovieCard
 import com.evangelidis.movieflix.presentation.home.UiMovie
 import kotlinx.collections.immutable.ImmutableList
@@ -76,7 +77,7 @@ fun DetailsRoute(
                 putExtra(Intent.EXTRA_SUBJECT, movie.title)
                 putExtra(Intent.EXTRA_TEXT, movie.homepageUrl)
             }
-            context.startActivity(Intent.createChooser(shareIntent, "Share Movie"))
+            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_movie)))
         },
         onFavoriteClick = viewModel::toggleFavorite,
         onRetry = viewModel::retry,
@@ -107,7 +108,7 @@ fun DetailsScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = stringResource(R.string.back)
                     )
                 }
 
@@ -115,7 +116,7 @@ fun DetailsScreen(
                     IconButton(onClick = { onShareClick(uiState.movie) }) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "Share"
+                            contentDescription = stringResource(R.string.share)
                         )
                     }
                 }
@@ -137,7 +138,7 @@ fun DetailsScreen(
                         modifier = Modifier.padding(24.dp)
                     ) {
                         Text(
-                            text = "Something went wrong",
+                            text = stringResource(R.string.error_something_went_wrong),
                             style = MaterialTheme.typography.titleMedium
                         )
 
@@ -148,7 +149,7 @@ fun DetailsScreen(
                         Spacer(Modifier.height(16.dp))
 
                         Button(onClick = onRetry) {
-                            Text("Retry")
+                            Text(stringResource(R.string.retry))
                         }
                     }
                 }
@@ -236,7 +237,7 @@ fun MovieHeaderSection(
             ) {
                 Icon(
                     imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = if (movie.isFavorite) "Remove from favorites" else "Add to favorites",
+                    contentDescription = if (movie.isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
                     tint = if (movie.isFavorite) Color.Red else Color.White
                 )
             }
@@ -252,8 +253,11 @@ fun MovieHeaderSection(
             Spacer(Modifier.height(8.dp))
 
             if (movie.genres.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(items = movie.genres, key = { it }) { genre ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    movie.genres.forEach { genre ->
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             shape = RoundedCornerShape(16.dp)
@@ -315,7 +319,7 @@ fun MovieHeaderSection(
 
             if (movie.overview.isNotEmpty()) {
                 Text(
-                    text = "Overview",
+                    text = stringResource(R.string.overview),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -336,15 +340,18 @@ fun MovieHeaderSection(
 fun CastSection(cast: ImmutableList<UiCastMember>) {
     Column {
         Text(
-            text = "Cast",
+            text = stringResource(R.string.cast),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 
         Spacer(Modifier.height(8.dp))
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(items = cast, key = { it.id }) { member ->
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
+            cast.forEach { member ->
                 CastMemberCard(member = member)
             }
         }
@@ -390,7 +397,7 @@ fun CastMemberCard(member: UiCastMember) {
 fun ReviewsSection(reviews: ImmutableList<UiReview>) {
     Column {
         Text(
-            text = "Reviews",
+            text = stringResource(R.string.reviews),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -461,15 +468,18 @@ fun SimilarMoviesSection(
 ) {
     Column {
         Text(
-            text = "Similar Movies",
+            text = stringResource(R.string.similar_movies),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 
         Spacer(Modifier.height(8.dp))
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(items = similarMovies, key = { it.id }) { similar ->
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
+            similarMovies.forEach { similar ->
                 Box(modifier = Modifier.width(220.dp)) {
                     MovieCard(
                         movie = similar,
