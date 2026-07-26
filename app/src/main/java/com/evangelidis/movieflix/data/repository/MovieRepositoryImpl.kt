@@ -1,6 +1,7 @@
 package com.evangelidis.movieflix.data.repository
 
 import com.evangelidis.movieflix.data.local.MovieDao
+import com.evangelidis.movieflix.data.local.MovieImageCache
 import com.evangelidis.movieflix.data.mapper.toCachedEntity
 import com.evangelidis.movieflix.data.mapper.toDomain
 import com.evangelidis.movieflix.data.mapper.toMoviesPage
@@ -18,7 +19,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /** Fetch movies data and wraps the results in DataResult (Success or Error). */
 class MovieRepositoryImpl @Inject constructor(
     private val api: TmdbApiService,
-    private val movieDao: MovieDao
+    private val movieDao: MovieDao,
+    private val movieImageCache: MovieImageCache
 ) : MovieRepository {
 
     override suspend fun getPopularMovies(page: Int): DataResult<MoviesPage> =
@@ -32,6 +34,10 @@ class MovieRepositoryImpl @Inject constructor(
                     movie.toCachedEntity(index)
                 }
                 movieDao.replaceAll(entities)
+
+                movieImageCache.prefetch(
+                    moviesPage.movies.mapNotNull { it.imageUrl }
+                )
             }
 
             DataResult.Success(moviesPage)
