@@ -45,9 +45,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,19 +62,22 @@ fun HomeRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is HomeEffect.NavigateToDetails -> onMovieClick(effect.movieId)
+            }
+        }
+    }
+
     HomeScreen(
         uiState = uiState,
-        onAction = viewModel::onAction,
-        onMovieClick = onMovieClick
+        onIntent = viewModel::onIntent
     )
 }
 
 @Composable
-fun HomeScreen(
-    uiState: HomeScreenState,
-    onAction: (HomeAction) -> Unit,
-    onMovieClick: (Int) -> Unit
-) {
+fun HomeScreen(uiState: HomeState, onIntent: (HomeIntent) -> Unit) {
     Scaffold(
         topBar = {
             Row(
@@ -100,110 +103,205 @@ fun HomeScreen(
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            when (uiState) {
-                is HomeScreenState.Loading -> CircularProgressIndicator()
+            when {
+                uiState.isInitialLoading -> CircularProgressIndicator()
 
-                is HomeScreenState.Error -> {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.error_something_went_wrong),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        Text(
-                            text = uiState.message,
-                            color = Color.Gray
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        Button(onClick = { onAction(HomeAction.Retry) }) {
-                            Text(stringResource(R.string.retry))
+                uiState.errorMessage != null && uiState.movies.isEmpty() -> {
+                    HomeErrorContent(
+                        message = uiState.errorMessage,
+                        onRetry = {
+                            onIntent(HomeIntent.Retry)
                         }
-                    }
+                    )
                 }
 
-                is HomeScreenState.Empty -> {
+                uiState.isEmpty -> {
                     Text(
                         text = stringResource(R.string.no_movies_found),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
 
-                is HomeScreenState.Content -> {
-                    val listState = rememberLazyListState()
-
-                    // Infinite scroll trigger
-                    val shouldLoadMore by remember {
-                        derivedStateOf {
-                            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-                            val totalItems = listState.layoutInfo.totalItemsCount
-                            lastVisibleItem != null && lastVisibleItem.index >= totalItems - 4
-                        }
-                    }
-
-                    LaunchedEffect(shouldLoadMore) {
-                        if (shouldLoadMore) onAction(HomeAction.LoadNextPage)
-                    }
-
-                    PullToRefreshBox(
-                        isRefreshing = uiState.isRefreshing,
-                        onRefresh = { onAction(HomeAction.Refresh) },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        LazyColumn(
-                            state = listState,
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            if (uiState.isOffline) {
-                                item {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.errorContainer,
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.offline_message),
-                                            color = MaterialTheme.colorScheme.onErrorContainer,
-                                            modifier = Modifier.padding(12.dp),
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                }
-                            }
-
-                            items(items = uiState.movies, key = { it.id }) { movie ->
-                                MovieCard(
-                                    movie = movie,
-                                    onClick = { onMovieClick(movie.id) },
-                                    onFavoriteClick = { onAction(HomeAction.ToggleFavorite(movie.id)) }
-                                )
-                            }
-
-                            if (uiState.isLoadingNextPage) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                    }
-                                }
-                            }
-                        }
-                    }
+                else -> {
+                    HomeContent(
+                        uiState = uiState,
+                        onIntent = onIntent
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeErrorContent(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(24.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.error_something_went_wrong),
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(onClick = onRetry) {
+            Text(stringResource(R.string.retry))
+        }
+    }
+}
+
+@Composable
+private fun HomeContent(
+    uiState: HomeState,
+    onIntent: (HomeIntent) -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            val totalItems = listState.layoutInfo.totalItemsCount
+            lastVisibleItem != null && totalItems > 0 && lastVisibleItem.index >= totalItems - 4
+        }
+    }
+
+    // Run the pagination check again when the current page changes
+    LaunchedEffect(
+        shouldLoadMore,
+        uiState.currentPage
+    ) {
+        if (shouldLoadMore) {
+            onIntent(HomeIntent.LoadNextPage)
+        }
+    }
+
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = { onIntent(HomeIntent.Refresh) },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (uiState.isOffline) {
+                item(key = "offline_message") {
+                    OfflineMessage()
+                }
+            }
+
+            if (uiState.errorMessage != null) {
+                item(key = "refresh_error") {
+                    ErrorMessage(
+                        message = uiState.errorMessage,
+                        actionText = stringResource(R.string.retry),
+                        onAction = {
+                            onIntent(HomeIntent.Refresh)
+                        }
+                    )
+                }
+            }
+
+            items(items = uiState.movies, key = UiMovie::id) { movie ->
+                MovieCard(
+                    movie = movie,
+                    onClick = { onIntent(HomeIntent.MovieClicked(movie.id)) },
+                    onFavoriteClick = { onIntent(HomeIntent.ToggleFavorite(movie.id)) }
+                )
+            }
+
+            if (uiState.isLoadingNextPage) {
+                item(key = "pagination_loader") {
+                    PaginationLoader()
+                }
+            }
+
+            if (uiState.loadMoreError != null) {
+                item(key = "pagination_error") {
+                    ErrorMessage(
+                        message = uiState.loadMoreError,
+                        actionText = stringResource(R.string.retry),
+                        onAction = { onIntent(HomeIntent.LoadNextPage) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfflineMessage() {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = stringResource(R.string.offline_message),
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessage(
+    message: String,
+    actionText: String,
+    onAction: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            Button(onClick = onAction) {
+                Text(actionText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaginationLoader() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(24.dp))
     }
 }
 
@@ -217,7 +315,7 @@ fun MovieCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column {
@@ -240,17 +338,22 @@ fun MovieCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.5f),
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
-                        imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (movie.isFavorite) stringResource(R.string.remove_from_favorites) else stringResource(R.string.add_to_favorites),
-                        tint = if (movie.isFavorite) Color.Red else Color.White
+                        imageVector = if (movie.isFavorite) { Icons.Filled.Favorite } else { Icons.Filled.FavoriteBorder },
+                        contentDescription = if (movie.isFavorite) { stringResource(R.string.remove_from_favorites) } else { stringResource(R.string.add_to_favorites) },
+                        tint = if (movie.isFavorite) { MaterialTheme.colorScheme.error } else { Color.White }
                     )
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
                 Text(
                     text = movie.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -263,14 +366,13 @@ fun MovieCard(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (movie.releaseDateFormatted.isNotEmpty()) {
                         Text(
                             text = movie.releaseDateFormatted,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -310,7 +412,7 @@ fun MovieCardPreview() {
                 id = 1,
                 title = "Inception",
                 imageUrl = null,
-                releaseDateFormatted = "Jul 16, 2010",
+                releaseDateFormatted = "16 Jul 2010",
                 ratingFormatted = "8.4",
                 isFavorite = false
             ),
@@ -322,57 +424,42 @@ fun MovieCardPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun MovieCardSavedNoRatingPreview() {
+fun FavoriteMovieCardPreview() {
     MaterialTheme {
         MovieCard(
             movie = UiMovie(
                 id = 1,
                 title = "Inception",
                 imageUrl = null,
-                releaseDateFormatted = "Jul 16, 2010",
-                ratingFormatted = "",
-                isFavorite = true
-            ),
-            onClick = {},
-            onFavoriteClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MovieCardSavedLongNamePreview() {
-    MaterialTheme {
-        MovieCard(
-            movie = UiMovie(
-                id = 1,
-                title = "Inception Inception Inception Inception Inception Inception",
-                imageUrl = null,
-                releaseDateFormatted = "Jul 16, 2010",
-                ratingFormatted = "",
-                isFavorite = true
-            ),
-            onClick = {},
-            onFavoriteClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MovieCardSavedNoReleaseDatePreview() {
-    MaterialTheme {
-        MovieCard(
-            movie = UiMovie(
-                id = 1,
-                title = "Inception",
-                imageUrl = null,
-                releaseDateFormatted = "",
+                releaseDateFormatted = "16 Jul 2010",
                 ratingFormatted = "8.4",
                 isFavorite = true
             ),
             onClick = {},
             onFavoriteClick = {}
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeErrorContentPreview() {
+    MaterialTheme {
+        HomeErrorContent(
+            message = "Unable to connect to the server.",
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OfflineMessagePreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            OfflineMessage()
+        }
     }
 }

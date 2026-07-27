@@ -5,17 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.evangelidis.movieflix.data.local.FavoritesDataStore
 import com.evangelidis.movieflix.domain.DataResult
 import com.evangelidis.movieflix.domain.model.Movie
-import com.evangelidis.movieflix.domain.model.MoviesPage
 import com.evangelidis.movieflix.domain.repository.MovieRepository
 import com.evangelidis.movieflix.presentation.toDisplayDate
 import com.evangelidis.movieflix.presentation.toRatingText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,78 +25,205 @@ class HomeViewModel @Inject constructor(
     private val favoritesDataStore: FavoritesDataStore
 ) : ViewModel() {
 
-    private val _moviesResult = MutableStateFlow<DataResult<MoviesPage>?>(null)
-    private val favoriteIds = favoritesDataStore.favoriteMovieIds
+    private val _uiState = MutableStateFlow(HomeState())
+    val uiState: StateFlow<HomeState> = _uiState.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    private val _isLoadingNextPage = MutableStateFlow(false)
-    private val _paginatedMovies = MutableStateFlow<List<Movie>>(emptyList())
+    private val _effects = Channel<HomeEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
-    val uiState: StateFlow<HomeScreenState> = combine(
-        _moviesResult,
-        favoriteIds,
-        _isRefreshing,
-        _isLoadingNextPage,
-        _paginatedMovies
-    ) { result, favorites, isRefreshing, isLoadingNextPage, paginatedList ->
-        buildScreenState(result, favorites, isRefreshing, isLoadingNextPage, paginatedList)
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        HomeScreenState.Loading
-    )
+    private var favoriteIds: Set<Int> = emptySet()
 
     init {
+        observeFavorites()
         loadInitial()
     }
 
-    fun onAction(action: HomeAction) {
-        when (action) {
-            HomeAction.LoadInitial -> loadInitial()
-            HomeAction.Refresh -> refresh()
-            HomeAction.LoadNextPage -> loadNextPage()
-            HomeAction.Retry -> loadInitial()
-            is HomeAction.ToggleFavorite -> toggleFavorite(action.movieId)
+    /**
+     * The single entry point for Home screen actions.
+     */
+    fun onIntent(intent: HomeIntent) {
+        when (intent) {
+            HomeIntent.Refresh -> refresh()
+            HomeIntent.LoadNextPage -> loadNextPage()
+            HomeIntent.Retry -> loadInitial()
+            is HomeIntent.ToggleFavorite -> toggleFavorite(intent.movieId)
+            is HomeIntent.MovieClicked -> navigateToDetails(intent.movieId)
         }
     }
 
-    private fun loadInitial() {
+    /**
+     * Observe favorite IDs and update every movie already displayed.
+     */
+    private fun observeFavorites() {
         viewModelScope.launch {
-            _moviesResult.value = null
-            fetchPage(1)
-        }
-    }
+            favoritesDataStore.favoriteMovieIds.collect { favorites ->
+                favoriteIds = favorites
 
-    private fun refresh() {
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            fetchPage(1)
-            _isRefreshing.value = false
-        }
-    }
-
-    private fun loadNextPage() {
-        val currentState = uiState.value
-        if (currentState is HomeScreenState.Content && currentState.hasMorePages && !_isLoadingNextPage.value) {
-            viewModelScope.launch {
-                _isLoadingNextPage.value = true
-                fetchPage(currentState.currentPage + 1)
-                _isLoadingNextPage.value = false
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        movies = currentState.movies
+                            .map { movie ->
+                                movie.copy(
+                                    isFavorite = movie.id in favorites
+                                )
+                            }
+                            .toImmutableList()
+                    )
+                }
             }
         }
     }
 
-    private suspend fun fetchPage(page: Int) {
-        val result = repository.getPopularMovies(page)
-        _moviesResult.value = result
+    /**
+     * Load the first page when the screen opens or when Retry is selected.
+     */
+    private fun loadInitial() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isInitialLoading = true,
+                isRefreshing = false,
+                isLoadingNextPage = false,
+                errorMessage = null,
+                loadMoreError = null
+            )
+        }
 
-        if (result is DataResult.Success) {
-            if (page == 1) {
-                // Clean duplicates ids from first page
-                _paginatedMovies.value = result.data.movies.distinctBy { it.id }
-            } else {
-                // Safe adding new pages without duplicates ids
-                _paginatedMovies.value = (_paginatedMovies.value + result.data.movies).distinctBy { it.id }
+        viewModelScope.launch {
+            when (val result = repository.getPopularMovies(page = 1)) {
+                is DataResult.Success -> {
+                    val movies = result.data.movies
+                        .distinctBy(Movie::id)
+                        .toUiModels(favoriteIds)
+
+                    _uiState.update {
+                        HomeState(
+                            movies = movies,
+                            isInitialLoading = false,
+                            isOffline = result.data.isFromCache,
+                            currentPage = result.data.page,
+                            totalPages = result.data.totalPages
+                        )
+                    }
+                }
+
+                is DataResult.Error -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isInitialLoading = false,
+                            errorMessage = result.throwable.message ?: "Failed to load movies"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Replace the current movie list with a fresh first page.
+     */
+    private fun refresh() {
+        val currentState = _uiState.value
+
+        if (currentState.isInitialLoading || currentState.isRefreshing || currentState.isLoadingNextPage) {
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isRefreshing = true,
+                errorMessage = null,
+                loadMoreError = null
+            )
+        }
+
+        viewModelScope.launch {
+            when (val result = repository.getPopularMovies(page = 1)) {
+                is DataResult.Success -> {
+                    val movies = result.data.movies
+                        .distinctBy(Movie::id)
+                        .toUiModels(favoriteIds)
+
+                    _uiState.update { state ->
+                        state.copy(
+                            movies = movies,
+                            isRefreshing = false,
+                            isOffline = result.data.isFromCache,
+                            currentPage = result.data.page,
+                            totalPages = result.data.totalPages,
+                            errorMessage = null,
+                            loadMoreError = null
+                        )
+                    }
+                }
+
+                is DataResult.Error -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            isRefreshing = false,
+                            errorMessage = result.throwable.message ?: "Failed to refresh movies"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Load the next available page.
+     */
+    private fun loadNextPage() {
+        val currentState = _uiState.value
+
+        if (
+            currentState.isInitialLoading ||
+            currentState.isRefreshing ||
+            currentState.isLoadingNextPage ||
+            currentState.isOffline ||
+            !currentState.hasMorePages
+        ) {
+            return
+        }
+
+        val nextPage = currentState.currentPage + 1
+
+        _uiState.update {
+            it.copy(
+                isLoadingNextPage = true,
+                loadMoreError = null
+            )
+        }
+
+        viewModelScope.launch {
+            when (val result = repository.getPopularMovies(nextPage)) {
+                is DataResult.Success -> {
+                    _uiState.update { state ->
+                        val newMovies = result.data.movies
+                            .map { movie ->
+                                movie.toUiModel(favoriteIds)
+                            }
+
+                        val combinedMovies = (state.movies + newMovies)
+                            .distinctBy(UiMovie::id)
+                            .toImmutableList()
+
+                        state.copy(
+                            movies = combinedMovies,
+                            isLoadingNextPage = false,
+                            currentPage = result.data.page,
+                            totalPages = result.data.totalPages,
+                            loadMoreError = null
+                        )
+                    }
+                }
+
+                is DataResult.Error -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoadingNextPage = false,
+                            loadMoreError = result.throwable.message ?: "Failed to load more movies"
+                        )
+                    }
+                }
             }
         }
     }
@@ -107,55 +234,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun buildScreenState(
-        result: DataResult<MoviesPage>?,
-        favorites: Set<Int>,
-        isRefreshing: Boolean,
-        isLoadingNextPage: Boolean,
-        paginatedMovies: List<Movie>
-    ): HomeScreenState {
-        if (result == null) return HomeScreenState.Loading
-
-        return when (result) {
-            is DataResult.Error -> {
-                if (paginatedMovies.isEmpty()) {
-                    HomeScreenState.Error(result.throwable.message ?: "Failed to get data")
-                } else {
-                    HomeScreenState.Content(
-                        movies = paginatedMovies.toUiModels(favorites).toImmutableList(),
-                        isRefreshing = isRefreshing,
-                        isLoadingNextPage = isLoadingNextPage
-                    )
-                }
-            }
-
-            is DataResult.Success -> {
-                val uiMovies = paginatedMovies.toUiModels(favorites)
-                if (uiMovies.isEmpty()) {
-                    HomeScreenState.Empty
-                } else {
-                    HomeScreenState.Content(
-                        movies = uiMovies.toImmutableList(),
-                        isRefreshing = isRefreshing,
-                        isLoadingNextPage = isLoadingNextPage,
-                        isOffline = result.data.isFromCache,
-                        currentPage = result.data.page,
-                        totalPages = result.data.totalPages
-                    )
-                }
-            }
-        }
+    private fun navigateToDetails(movieId: Int) {
+        _effects.trySend(
+            HomeEffect.NavigateToDetails(movieId)
+        )
     }
 
-    private fun List<Movie>.toUiModels(favorites: Set<Int>): List<UiMovie> =
-        map { domain ->
-            UiMovie(
-                id = domain.id,
-                title = domain.title,
-                imageUrl = domain.imageUrl,
-                releaseDateFormatted = domain.releaseDate.toDisplayDate(),
-                ratingFormatted = domain.voteAverage.toRatingText(),
-                isFavorite = domain.id in favorites
-            )
-        }
+    private fun List<Movie>.toUiModels(favorites: Set<Int>) = map { movie ->
+        movie.toUiModel(favorites)
+    }.toImmutableList()
+
+    private fun Movie.toUiModel(favorites: Set<Int>) = UiMovie(
+        id = id,
+        title = title,
+        imageUrl = imageUrl,
+        releaseDateFormatted = releaseDate.toDisplayDate(),
+        ratingFormatted = voteAverage.toRatingText(),
+        isFavorite = id in favorites
+    )
 }
