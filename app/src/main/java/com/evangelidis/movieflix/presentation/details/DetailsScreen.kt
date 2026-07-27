@@ -2,6 +2,7 @@ package com.evangelidis.movieflix.presentation.details
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -57,7 +57,6 @@ import com.evangelidis.movieflix.presentation.home.MovieCard
 import com.evangelidis.movieflix.presentation.home.UiMovie
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun DetailsRoute(
@@ -96,31 +95,11 @@ fun DetailsScreen(
 ) {
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .height(56.dp)
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back)
-                    )
-                }
-
-                if (uiState is DetailsScreenState.Content && uiState.movie.isShareable) {
-                    IconButton(onClick = { onShareClick(uiState.movie) }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(R.string.share)
-                        )
-                    }
-                }
-            }
+            DetailsTopBar(
+                uiState = uiState,
+                onBackClick = onBackClick,
+                onShareClick = onShareClick
+            )
         }
     ) { paddingValues ->
         Box(
@@ -161,6 +140,54 @@ fun DetailsScreen(
                         onSimilarMovieClick = onSimilarMovieClick
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun DetailsTopBar(
+    uiState: DetailsScreenState,
+    onBackClick: () -> Unit,
+    onShareClick: (UiMovieDetails) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(56.dp)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back)
+            )
+        }
+
+        if (uiState is DetailsScreenState.Content) {
+            Text(
+                text = uiState.movie.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
+        if (uiState is DetailsScreenState.Content && uiState.movie.isShareable) {
+            IconButton(onClick = { onShareClick(uiState.movie) }) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = stringResource(R.string.share)
+                )
             }
         }
     }
@@ -216,9 +243,11 @@ fun MovieHeaderSection(
     onFavoriteClick: (Int) -> Unit
 ) {
     Column {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+        ) {
             AsyncImage(
                 model = movie.imageUrl,
                 contentDescription = movie.title,
@@ -492,7 +521,83 @@ fun SimilarMoviesSection(
     }
 }
 
+
+
+private val sampleMovieDetails = UiMovieDetails(
+    id = 1,
+    title = "Turbo Kid",
+    overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
+    imageUrl = null,
+    releaseDateFormatted = "Aug 28, 2015",
+    ratingFormatted = "6.7",
+    runtimeFormatted = "1h 33m",
+    genres = persistentListOf("Action", "Adventure", "Comedy", "Sci-Fi"),
+    homepageUrl = "",
+    isFavorite = true,
+    isShareable = false,
+    cast = persistentListOf(
+        UiCastMember(1, "Munro Chambers", "The Kid", null),
+        UiCastMember(2, "Laurence Leboeuf", "Apple", null),
+        UiCastMember(3, "Michael Ironside", "Zeus", null)
+    ),
+    reviews = persistentListOf(
+        UiReview("r1", "Kostas", "9.0", "A masterpiece of modern cinema! Nostalgic and gory fun."),
+        UiReview("r2", "Alex", "8.0", "Great synthwave soundtrack and fun action scenes.")
+    ),
+    similarMovies = persistentListOf(
+        UiMovie(1, "Mad Max: Fury Road", null, "May 15, 2015", "8.1", false)
+    )
+)
+
+private val sampleMovieDetailsEdgeCases = UiMovieDetails(
+    id = 2,
+    title = "Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb - Special Extended Director's Cut Edition",
+    overview = "An insane American general orders a bombing attack on the Soviet Union, triggering a path to nuclear holocaust that a room full of politicians and generals frantically tries to stop.",
+    imageUrl = null,
+    releaseDateFormatted = "",
+    ratingFormatted = "",
+    runtimeFormatted = "",
+    genres = persistentListOf("Comedy", "War"),
+    homepageUrl = null,
+    isFavorite = false,
+    isShareable = true,
+    cast = persistentListOf(
+        UiCastMember(
+            id = 1,
+            name = "Peter Sellers",
+            character = "Dr. Strangelove / Group Capt. Lionel Mandrake / President Merkin Muffley",
+            profileUrl = null
+        )
+    ),
+    reviews = persistentListOf(),
+    similarMovies = persistentListOf()
+)
+
 // PREVIEWS
+@Preview(showBackground = true)
+@Composable
+fun DetailsTopBarPreview() {
+    MaterialTheme {
+        DetailsTopBar(
+            uiState = DetailsScreenState.Content(sampleMovieDetails),
+            onBackClick = {},
+            onShareClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DetailsTopBarLongTextPreview() {
+    MaterialTheme {
+        DetailsTopBar(
+            uiState = DetailsScreenState.Content(sampleMovieDetails),
+            onBackClick = {},
+            onShareClick = {}
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun MovieHeaderSectionPreview() {
@@ -553,28 +658,37 @@ fun DetailsContentPreview() {
     }
 }
 
-private val sampleMovieDetails = UiMovieDetails(
-    id = 1,
-    title = "Turbo Kid",
-    overview = "In a post-apocalyptic wasteland in 1997, a comic book fan adopts the persona of his favourite hero to save his enthusiastic friend and fight a tyrannical overlord.",
-    imageUrl = null,
-    releaseDateFormatted = "Aug 28, 2015",
-    ratingFormatted = "6.7",
-    runtimeFormatted = "1h 33m",
-    genres = persistentListOf("Action", "Adventure", "Comedy", "Sci-Fi"),
-    homepageUrl = "",
-    isFavorite = true,
-    isShareable = true,
-    cast = persistentListOf(
-        UiCastMember(1, "Munro Chambers", "The Kid", null),
-        UiCastMember(2, "Laurence Leboeuf", "Apple", null),
-        UiCastMember(3, "Michael Ironside", "Zeus", null)
-    ),
-    reviews = persistentListOf(
-        UiReview("r1", "Kostas", "9.0", "A masterpiece of modern cinema! Nostalgic and gory fun."),
-        UiReview("r2", "Alex", "8.0", "Great synthwave soundtrack and fun action scenes.")
-    ),
-    similarMovies = persistentListOf(
-        UiMovie(1, "Mad Max: Fury Road", null, "May 15, 2015", "8.1", false)
-    )
-)
+@Preview(showBackground = true)
+@Composable
+fun DetailsTopBarLongTitlePreview() {
+    MaterialTheme {
+        DetailsTopBar(
+            uiState = DetailsScreenState.Content(sampleMovieDetailsEdgeCases),
+            onBackClick = {},
+            onShareClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MovieHeaderSectionEdgeCasesPreview() {
+    MaterialTheme {
+        MovieHeaderSection(
+            movie = sampleMovieDetailsEdgeCases,
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DetailsContentEdgeCasesPreview() {
+    MaterialTheme {
+        DetailsContent(
+            movie = sampleMovieDetailsEdgeCases,
+            onFavoriteClick = {},
+            onSimilarMovieClick = {}
+        )
+    }
+}
