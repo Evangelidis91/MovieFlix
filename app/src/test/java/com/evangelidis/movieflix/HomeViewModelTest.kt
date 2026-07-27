@@ -5,33 +5,37 @@ import com.evangelidis.movieflix.domain.DataResult
 import com.evangelidis.movieflix.domain.model.Movie
 import com.evangelidis.movieflix.domain.model.MoviesPage
 import com.evangelidis.movieflix.domain.repository.MovieRepository
-import com.evangelidis.movieflix.presentation.home.HomeScreenState
 import com.evangelidis.movieflix.presentation.home.HomeViewModel
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 /**
  * Unit tests for HomeViewModel.
- * Verifies UI state transitions (Content, Error)
+ *
+ * Verifies the HomeState produced after successful and failed
+ * initial movie requests.
  */
-
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: MovieRepository = mockk()
-    private val favoritesDataStore: FavoritesDataStore = mockk(relaxed = true)
+    private val favoritesDataStore: FavoritesDataStore = mockk()
 
     private lateinit var viewModel: HomeViewModel
 
@@ -44,54 +48,77 @@ class HomeViewModelTest {
     )
 
     @Before
-    fun setup() {
-        coEvery { favoritesDataStore.favoriteMovieIds } returns flowOf(emptySet())
+    fun setUp() {
+        // favoriteMovieIds is a Flow property, not a suspend function.
+        every {
+            favoritesDataStore.favoriteMovieIds
+        } returns flowOf(emptySet())
     }
 
     @Test
-    fun `when repository returns success, uiState becomes Content`() = runTest {
+    fun `when repository returns success, state contains movies`() = runTest {
         // Given
-        val successResult = DataResult.Success(
+        coEvery {
+            repository.getPopularMovies(page = 1)
+        } returns DataResult.Success(
             MoviesPage(
                 movies = listOf(sampleMovie),
                 page = 1,
                 totalPages = 5
             )
         )
-        coEvery { repository.getPopularMovies(1) } returns successResult
 
         // When
-        viewModel = HomeViewModel(repository, favoritesDataStore)
+        viewModel = HomeViewModel(
+            repository = repository,
+            favoritesDataStore = favoritesDataStore
+        )
 
-        backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
         // Then
         val state = viewModel.uiState.value
-        assertTrue(state is HomeScreenState.Content)
 
-        val content = state as HomeScreenState.Content
-        assertEquals(1, content.movies.size)
-        assertEquals("Inception", content.movies[0].title)
+        assertFalse(state.isInitialLoading)
+        assertNull(state.errorMessage)
+        assertFalse(state.isOffline)
+        assertEquals(1, state.currentPage)
+        assertEquals(5, state.totalPages)
+        assertEquals(1, state.movies.size)
+
+        val movie = state.movies.first()
+
+        assertEquals(1, movie.id)
+        assertEquals("Inception", movie.title)
+        assertEquals("16 Jul 2010", movie.releaseDateFormatted)
+        assertEquals("8.8", movie.ratingFormatted)
+        assertFalse(movie.isFavorite)
     }
 
     @Test
-    fun `when repository returns error, uiState becomes Error`() = runTest {
+    fun `when repository returns error, state contains error message`() = runTest {
         // Given
-        coEvery { repository.getPopularMovies(1) } returns DataResult.Error(Exception("No Internet"))
+        coEvery {
+            repository.getPopularMovies(page = 1)
+        } returns DataResult.Error(
+            IOException("No Internet")
+        )
 
         // When
-        viewModel = HomeViewModel(repository, favoritesDataStore)
+        viewModel = HomeViewModel(
+            repository = repository,
+            favoritesDataStore = favoritesDataStore
+        )
 
-        backgroundScope.launch { viewModel.uiState.collect() }
         advanceUntilIdle()
 
         // Then
         val state = viewModel.uiState.value
-        assertTrue(state is HomeScreenState.Error)
 
-        val errorState = state as HomeScreenState.Error
-        assertEquals("No Internet", errorState.message)
+        assertFalse(state.isInitialLoading)
+        assertTrue(state.movies.isEmpty())
+        assertEquals("No Internet", state.errorMessage)
+        assertEquals(0, state.currentPage)
+        assertEquals(1, state.totalPages)
     }
-
 }
