@@ -86,7 +86,7 @@ class DetailsViewModel @Inject constructor(
             releaseDateFormatted = releaseDate.toDisplayDate(),
             ratingFormatted = voteAverage.toRatingText(),
             runtimeFormatted = runtimeMinutes.toRuntimeText(),
-            genres = genres.toImmutableList(),
+            genres = genres.filter { it.isNotBlank() }.toImmutableList(),
             homepageUrl = homepageUrl,
             isFavorite = id in favorites,
             isShareable = isShareable,
