@@ -188,8 +188,7 @@ class HomeViewModel @Inject constructor(
 
         _uiState.update {
             it.copy(
-                isLoadingNextPage = true,
-                loadMoreError = null
+                isLoadingNextPage = true
             )
         }
 
