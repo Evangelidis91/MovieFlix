@@ -11,9 +11,7 @@ import com.evangelidis.movieflix.domain.DataResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -79,21 +77,21 @@ class MovieRepositoryImplTest {
             val result = repository.getPopularMovies(page = 1)
 
             // Then
-            assertTrue(result is DataResult.Success)
+            TestCase.assertTrue(result is DataResult.Success)
 
             val page = (result as DataResult.Success).data
             val movie = page.movies.first()
 
-            assertEquals(1, page.page)
-            assertEquals(10, page.totalPages)
-            assertFalse(page.isFromCache)
-            assertEquals(1, page.movies.size)
+            TestCase.assertEquals(1, page.page)
+            TestCase.assertEquals(10, page.totalPages)
+            TestCase.assertFalse(page.isFromCache)
+            TestCase.assertEquals(1, page.movies.size)
 
-            assertEquals(1, movie.id)
-            assertEquals("Inception", movie.title)
-            assertEquals(expectedImageUrl, movie.imageUrl)
-            assertEquals("2010-07-16", movie.releaseDate)
-            assertEquals(8.8, movie.voteAverage)
+            TestCase.assertEquals(1, movie.id)
+            TestCase.assertEquals("Inception", movie.title)
+            TestCase.assertEquals(expectedImageUrl, movie.imageUrl)
+            TestCase.assertEquals("2010-07-16", movie.releaseDate)
+            TestCase.assertEquals(8.8, movie.voteAverage)
 
             coVerify(exactly = 1) {
                 movieDao.replaceAll(
@@ -138,16 +136,16 @@ class MovieRepositoryImplTest {
             val result = repository.getPopularMovies(page = 1)
 
             // Then
-            assertTrue(result is DataResult.Success)
+            TestCase.assertTrue(result is DataResult.Success)
 
             val page = (result as DataResult.Success).data
             val movie = page.movies.first()
 
-            assertTrue(page.isFromCache)
-            assertEquals(1, page.page)
-            assertEquals(1, page.totalPages)
-            assertEquals(1, page.movies.size)
-            assertEquals("Inception Cached", movie.title)
+            TestCase.assertTrue(page.isFromCache)
+            TestCase.assertEquals(1, page.page)
+            TestCase.assertEquals(1, page.totalPages)
+            TestCase.assertEquals(1, page.movies.size)
+            TestCase.assertEquals("Inception Cached", movie.title)
 
             coVerify(exactly = 1) {
                 movieDao.getCachedMovies()

@@ -66,6 +66,7 @@ fun DetailsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val shareChooserTitle = stringResource(R.string.share_movie)
 
     DetailsScreen(
         uiState = uiState,
@@ -76,7 +77,13 @@ fun DetailsRoute(
                 putExtra(Intent.EXTRA_SUBJECT, movie.title)
                 putExtra(Intent.EXTRA_TEXT, movie.homepageUrl)
             }
-            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_movie)))
+
+            context.startActivity(
+                Intent.createChooser(
+                    shareIntent,
+                    shareChooserTitle
+                )
+            )
         },
         onFavoriteClick = viewModel::toggleFavorite,
         onRetry = viewModel::retry,

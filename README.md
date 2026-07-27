@@ -3,15 +3,15 @@
 MovieFlix is an Android app for browsing popular movies from the TMDB API.
 
 Users can explore popular movies, load additional pages, save favorites, 
-view detailed informations, and access the first page while offline.
+view detailed information, and access the first page while offline.
 
 ## Features
 
 ### Home
-- Popular movies with title, image, released date, rating and favorite status.
-- Unfinite scrolling
+- Popular movies with title, image, release date, rating and favorite status.
+- Infinite scrolling
 - Pull-to-refresh
-- Loading, empty and error state
+- Loading, empty and error states
 - Retry support for initial loading, refresh and pagination
 - Persistent favorites
 
@@ -31,10 +31,33 @@ view detailed informations, and access the first page while offline.
 - Cached movies and images are available after re-opening the app without internet connection
 
 > Only first page is available offline
-> Movie details required internet connection
+> Movie details require an internet connection
 
 
 ## Architecture
+
+## Architecture
+
+### Modularization
+
+The project is separated into three Gradle modules:
+
+- **app** contains the Compose UI, ViewModels, navigation and application setup.
+- **domain** is a pure Kotlin module containing the domain models, result types
+  and repository contracts.
+- **data** contains the remote and local data sources, repository implementation,
+  mappers, image caching and data-related dependency injection.
+
+The dependencies follow Clean Architecture principles:
+
+```
+text
+app  ──────> domain
+└────────> data ──────> domain
+```
+
+This structure keeps the domain layer independent from Android frameworks and
+separates presentation logic from data implementations.
 
 ### Home: MVI
 
@@ -60,10 +83,6 @@ with the current favorite IDs.
 
 Reviews and similar movies are optional. If one of these requests fails, the main
 movie details can still be displayed.
-
-Reviews and similar movies are optional. If one of these requests fails, the
-main movie details can still be displayed.
-
 
 ## Offline Implementation
 
