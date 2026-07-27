@@ -1,6 +1,5 @@
 package com.evangelidis.movieflix.data.mapper
 
-import androidx.compose.ui.util.fastCoerceAtMost
 import com.evangelidis.movieflix.data.NetworkConstants.IMAGE_BASE_URL
 import com.evangelidis.movieflix.data.NetworkConstants.TMDB_MAX_PAGE
 import com.evangelidis.movieflix.data.local.MovieEntity
@@ -41,7 +40,7 @@ fun MovieDto.toDomain(): Movie = Movie(
 fun MoviePageResponseDto.toMoviesPage(): MoviesPage = MoviesPage(
     movies = results.map { it.toDomain() },
     page = page,
-    totalPages = totalPages.fastCoerceAtMost(TMDB_MAX_PAGE)
+    totalPages = totalPages.coerceAtMost(TMDB_MAX_PAGE)
 )
 
 /** Get 6 similar movies */
