@@ -180,7 +180,11 @@ private fun HomeContent(
     // Run the pagination check again when the current page changes
     LaunchedEffect(
         shouldLoadMore,
-        uiState.currentPage
+        uiState.currentPage,
+        uiState.isOffline,
+        uiState.totalPages,
+        uiState.isRefreshing,
+        uiState.loadMoreError
     ) {
         if (shouldLoadMore) {
             onIntent(HomeIntent.LoadNextPage)
@@ -224,19 +228,22 @@ private fun HomeContent(
                 )
             }
 
-            if (uiState.isLoadingNextPage) {
-                item(key = "pagination_loader") {
-                    PaginationLoader()
-                }
-            }
+            val loadMoreError = uiState.loadMoreError
 
-            if (uiState.loadMoreError != null) {
+            if (loadMoreError != null) {
                 item(key = "pagination_error") {
                     ErrorMessage(
-                        message = uiState.loadMoreError,
+                        message = loadMoreError,
                         actionText = stringResource(R.string.retry),
-                        onAction = { onIntent(HomeIntent.LoadNextPage) }
+                        onAction = {
+                            onIntent(HomeIntent.LoadNextPage)
+                        },
+                        isLoading = uiState.isLoadingNextPage
                     )
+                }
+            } else if (uiState.isLoadingNextPage) {
+                item(key = "pagination_loader") {
+                    PaginationLoader()
                 }
             }
         }
@@ -263,7 +270,8 @@ private fun OfflineMessage() {
 private fun ErrorMessage(
     message: String,
     actionText: String,
-    onAction: () -> Unit
+    onAction: () -> Unit,
+    isLoading: Boolean = false
 ) {
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
@@ -286,8 +294,15 @@ private fun ErrorMessage(
 
             Spacer(Modifier.width(8.dp))
 
-            Button(onClick = onAction) {
-                Text(actionText)
+            Button(onClick = onAction, enabled = !isLoading) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(actionText)
+                }
             }
         }
     }
