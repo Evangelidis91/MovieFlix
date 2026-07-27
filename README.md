@@ -36,8 +36,6 @@ view detailed information, and access the first page while offline.
 
 ## Architecture
 
-## Architecture
-
 ### Modularization
 
 The project is separated into three Gradle modules:
