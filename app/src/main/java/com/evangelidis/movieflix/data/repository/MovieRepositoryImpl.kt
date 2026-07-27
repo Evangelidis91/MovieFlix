@@ -8,6 +8,7 @@ import com.evangelidis.movieflix.data.mapper.toMoviesPage
 import com.evangelidis.movieflix.data.mapper.toSimilarMovies
 import com.evangelidis.movieflix.data.remote.api.TmdbApiService
 import com.evangelidis.movieflix.domain.DataResult
+import com.evangelidis.movieflix.domain.model.Movie
 import com.evangelidis.movieflix.domain.model.MovieDetails
 import com.evangelidis.movieflix.domain.model.MoviesPage
 import com.evangelidis.movieflix.domain.repository.MovieRepository
@@ -23,47 +24,76 @@ class MovieRepositoryImpl @Inject constructor(
     private val movieImageCache: MovieImageCache
 ) : MovieRepository {
 
-    override suspend fun getPopularMovies(page: Int): DataResult<MoviesPage> =
-        try {
-            val response = api.getPopularMovies(page)
-            val moviesPage = response.toMoviesPage()
 
-            // Save page 1 to Room for offline fallback
-            if (page == 1) {
-                val entities = moviesPage.movies.mapIndexed { index, movie ->
-                    movie.toCachedEntity(index)
-                }
-                movieDao.replaceAll(entities)
-
-                movieImageCache.prefetch(
-                    moviesPage.movies.mapNotNull { it.imageUrl }
-                )
-            }
-
-            DataResult.Success(moviesPage)
-        } catch (e: Exception) {
-            if (page == 1) {
-                // Offline fallback for page 1
-                val cached = movieDao.getCachedMovies()
-                if (cached.isNotEmpty()) {
-                    DataResult.Success(
-                        MoviesPage(
-                            movies = cached.map { it.toDomain() },
-                            page = 1,
-                            totalPages = 1,
-                            isFromCache = true
-                        )
-                    )
-                } else {
-                    if (e is CancellationException) throw e
-                    DataResult.Error(e)
-                }
+    override suspend fun getPopularMovies(page: Int): DataResult<MoviesPage> {
+        val moviesPage = try {
+            api.getPopularMovies(page).toMoviesPage()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (networkError: Exception) {
+            return if (page == 1) {
+                getCachedPage(networkError)
             } else {
-                if (e is CancellationException) throw e
-                DataResult.Error(e)
+                DataResult.Error(networkError)
             }
         }
 
+        if (page == 1) {
+            cacheFirstPage(moviesPage)
+        }
+
+        return DataResult.Success(moviesPage)
+    }
+
+    private suspend fun cacheFirstPage(moviesPage: MoviesPage) {
+        try {
+            val entities = moviesPage.movies.mapIndexed { index, movie ->
+                movie.toCachedEntity(index)
+            }
+
+            movieDao.replaceAll(entities)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Fresh network data remains valid even if Room fails.
+        }
+
+        try {
+            movieImageCache.prefetch(
+                moviesPage.movies.mapNotNull(Movie::imageUrl)
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Image caching should not invalidate the network result.
+        }
+    }
+
+    private suspend fun getCachedPage(
+        networkError: Exception
+    ): DataResult<MoviesPage> {
+        return try {
+            val cachedMovies = movieDao.getCachedMovies()
+
+            if (cachedMovies.isEmpty()) {
+                DataResult.Error(networkError)
+            } else {
+                DataResult.Success(
+                    MoviesPage(
+                        movies = cachedMovies.map { it.toDomain() },
+                        page = 1,
+                        totalPages = 1,
+                        isFromCache = true
+                    )
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (cacheError: Exception) {
+            networkError.addSuppressed(cacheError)
+            DataResult.Error(networkError)
+        }
+    }
 
     override suspend fun getMovieDetails(movieId: Int): DataResult<MovieDetails> =
         try {
