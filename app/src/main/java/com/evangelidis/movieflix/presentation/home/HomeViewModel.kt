@@ -2,7 +2,7 @@ package com.evangelidis.movieflix.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.evangelidis.movieflix.data.local.FavoritesDataStore
+import com.evangelidis.movieflix.data.local.FavoritesRepository
 import com.evangelidis.movieflix.domain.DataResult
 import com.evangelidis.movieflix.domain.model.Movie
 import com.evangelidis.movieflix.domain.repository.MovieRepository
@@ -22,7 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: MovieRepository,
-    private val favoritesDataStore: FavoritesDataStore
+    private val favoritesDataStore: FavoritesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeState())
@@ -56,7 +56,7 @@ class HomeViewModel @Inject constructor(
      */
     private fun observeFavorites() {
         viewModelScope.launch {
-            favoritesDataStore.favoriteMovieIds.collect { favorites ->
+            favoritesDataStore.getFavoriteMovieIds().collect { favorites ->
                 favoriteIds = favorites
 
                 _uiState.update { currentState ->

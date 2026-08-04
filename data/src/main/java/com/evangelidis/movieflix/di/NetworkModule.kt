@@ -1,5 +1,6 @@
 package com.evangelidis.movieflix.di
 
+import com.evangelidis.movieflix.data.BuildConfig
 import com.evangelidis.movieflix.data.NetworkConstants.BASE_URL
 import com.evangelidis.movieflix.data.remote.api.TmdbApiService
 import com.evangelidis.movieflix.data.remote.interceptor.ApiKeyInterceptor
@@ -13,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -22,6 +24,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    @Provides
+    @Singleton
+    @Named("api_key")
+    fun provideApiKey(): String {
+        return BuildConfig.TMDB_API_KEY
+    }
 
     @Provides
     @Singleton

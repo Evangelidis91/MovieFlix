@@ -1,6 +1,7 @@
 package com.evangelidis.movieflix.data.local
 
 import android.content.Context
+import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -14,19 +15,19 @@ import javax.inject.Singleton
  */
 private val Context.dataStore by preferencesDataStore(name = "favorites_prefs")
 
-interface FavoritesDataStore {
-    val favoriteMovieIds: Flow<Set<Int>>
+interface FavoritesRepository {
+    fun getFavoriteMovieIds(): Flow<Set<Int>>
     suspend fun setFavorites(movieId: Int)
 }
 
 @Singleton
 class FavoritesDataStoreImpl @Inject constructor(
     private val context: Context
-) : FavoritesDataStore {
+) : FavoritesRepository {
 
     private val favoritesKey = stringSetPreferencesKey("favorite_movie_ids")
 
-    override val favoriteMovieIds: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
+    override fun getFavoriteMovieIds(): Flow<Set<Int>> = context.dataStore.data.map { prefs ->
         prefs[favoritesKey]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
     }
 

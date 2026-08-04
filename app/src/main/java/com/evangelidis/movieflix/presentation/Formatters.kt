@@ -10,7 +10,7 @@ fun String?.toDisplayDate(): String {
         val parser = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val formatter = SimpleDateFormat("d MMM yyyy", Locale.US)
         parser.parse(this)?.let { formatter.format(it) } ?: this
-    } catch (e: Exception){
+    } catch (_: Exception){
         this
     }
 }

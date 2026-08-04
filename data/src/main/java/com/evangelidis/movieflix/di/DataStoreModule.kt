@@ -1,8 +1,8 @@
 package com.evangelidis.movieflix.di
 
 import android.content.Context
-import com.evangelidis.movieflix.data.local.FavoritesDataStore
 import com.evangelidis.movieflix.data.local.FavoritesDataStoreImpl
+import com.evangelidis.movieflix.data.local.FavoritesRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,6 +20,6 @@ object DataStoreModule {
 
     @Provides
     @Singleton
-    fun provideFavoritesDataStore(@ApplicationContext context: Context): FavoritesDataStore =
+    fun provideFavoritesDataStore(@ApplicationContext context: Context): FavoritesRepository =
         FavoritesDataStoreImpl(context)
 }
