@@ -116,4 +116,4 @@ results report only one available page because only page 1 is stored locally.
 - JUnit, MockK, and Coroutines Test
 
 ### API Key
-I used the Api key cause the token was not working
+Add your TMDB API Key to local.properties without quotes
