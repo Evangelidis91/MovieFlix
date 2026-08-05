@@ -51,7 +51,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.AsyncImage
 import com.evangelidis.movieflix.R
 
@@ -61,11 +65,14 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel.effects, lifecycleOwner) {
         viewModel.effects.collect { effect ->
-            when (effect) {
-                is HomeEffect.NavigateToDetails -> onMovieClick(effect.movieId)
+            lifecycleOwner.repeatOnLifecycle( Lifecycle.State.STARTED) {
+                when (effect) {
+                    is HomeEffect.NavigateToDetails -> onMovieClick(effect.movieId)
+                }
             }
         }
     }

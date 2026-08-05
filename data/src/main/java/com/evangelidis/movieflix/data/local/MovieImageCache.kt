@@ -37,10 +37,9 @@ class MovieImageCache @Inject constructor(
                                 .memoryCachePolicy(CachePolicy.DISABLED)
                                 .build()
 
-                            when (imageLoader.execute(request)) {
-                                is SuccessResult -> Unit
-                                is ErrorResult -> Unit
-                            }
+                            imageLoader.execute(request)
+
+
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: Exception) {

@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.evangelidis.movieflix.data.local.FavoritesDataStore
+import com.evangelidis.movieflix.data.local.FavoritesRepository
 import com.evangelidis.movieflix.domain.DataResult
 import com.evangelidis.movieflix.domain.model.MovieDetails
 import com.evangelidis.movieflix.domain.repository.MovieRepository
@@ -27,13 +27,13 @@ import javax.inject.Inject
 class DetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: MovieRepository,
-    private val favoritesDataStore: FavoritesDataStore
+    private val favoritesDataStore: FavoritesRepository
 ) : ViewModel() {
 
     private val movieId: Int = savedStateHandle.toRoute<Route.Details>().movieId
 
     private val _movieDetailsResult = MutableStateFlow<DataResult<MovieDetails>?>(null)
-    private val favoriteIds = favoritesDataStore.favoriteMovieIds
+    private val favoriteIds = favoritesDataStore.getFavoriteMovieIds()
 
     val uiState: StateFlow<DetailsScreenState> = combine(
         _movieDetailsResult,

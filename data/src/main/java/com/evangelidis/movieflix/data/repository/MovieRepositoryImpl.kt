@@ -100,8 +100,8 @@ class MovieRepositoryImpl @Inject constructor(
             coroutineScope {
                 // Execute details, reviews, and similar requests
                 val detailsDeferred = async { api.getMovieDetails(movieId) }
-                val reviewsDeferred = async { runCatching { api.getMovieReviews(movieId) } }
-                val similarDeferred = async { runCatching { api.getSimilarMovies(movieId) } }
+                val reviewsDeferred = async { runCatchingCancellable { api.getMovieReviews(movieId) } }
+                val similarDeferred = async { runCatchingCancellable { api.getSimilarMovies(movieId) } }
 
                 val detailsDto = detailsDeferred.await()
                 val reviewsDto = reviewsDeferred.await().getOrNull()
@@ -122,3 +122,13 @@ class MovieRepositoryImpl @Inject constructor(
             DataResult.Error(e)
         }
 }
+
+// Εκτελεί το block επιστρέφοντας Result χωρίς να καταπίνει το CancellationException.
+// Είναι inline ώστε ο compiler να κάνει copy-paste το lambda, αποφεύγοντας τη δέσμευση μνήμης.
+inline fun <T> runCatchingCancellable(block: () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (e: Throwable) {
+        if (e is CancellationException) throw e
+        Result.failure(e)
+    }

@@ -14,6 +14,7 @@ import org.junit.runner.Description
  * This allows coroutines running on Dispatchers.Main to execute unit tests.
  */
 
+// αντικαταστα τα main thread  με τεστ thread ωστε να μην κρασαρει, επειδη τρεχει σε jvm που δεν υποστηριζει thread
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
     val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()

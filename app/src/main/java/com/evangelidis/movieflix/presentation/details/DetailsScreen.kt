@@ -1,11 +1,13 @@
 package com.evangelidis.movieflix.presentation.details
 
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -383,14 +387,23 @@ fun CastSection(cast: ImmutableList<UiCastMember>) {
 
         Spacer(Modifier.height(8.dp))
 
-        Row(
+        LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState())
+            contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            cast.forEach { member ->
+            items(items = cast, key = UiCastMember::id) { member ->
                 CastMemberCard(member = member)
             }
         }
+
+//        Row(
+//            horizontalArrangement = Arrangement.spacedBy(12.dp),
+//            modifier = Modifier.horizontalScroll(rememberScrollState())
+//        ) {
+//            cast.forEach { member ->
+//                CastMemberCard(member = member)
+//            }
+//        }
     }
 }
 

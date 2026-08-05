@@ -1,6 +1,6 @@
 package com.evangelidis.movieflix
 
-import com.evangelidis.movieflix.data.local.FavoritesDataStore
+import com.evangelidis.movieflix.data.local.FavoritesRepository
 import com.evangelidis.movieflix.domain.DataResult
 import com.evangelidis.movieflix.domain.model.Movie
 import com.evangelidis.movieflix.domain.model.MoviesPage
@@ -14,6 +14,7 @@ import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -35,7 +36,7 @@ class HomeViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: MovieRepository = mockk()
-    private val favoritesDataStore: FavoritesDataStore = mockk()
+    private val favoritesDataStore: FavoritesRepository = mockk()
 
     private lateinit var viewModel: HomeViewModel
 
@@ -47,11 +48,13 @@ class HomeViewModelTest {
         voteAverage = 8.8
     )
 
+    //Ορίζει τη συμπεριφορά (Stubbing) μιας κανονικής / σύγχρονης (non-suspend) συνάρτησης ή property.
+    // "Όποτε το ViewModel διαβάζει τα αγαπημένα, δώσε του αμέσως ένα Flow με άδειο Set"
     @Before
     fun setUp() {
         // favoriteMovieIds is a Flow property, not a suspend function.
         every {
-            favoritesDataStore.favoriteMovieIds
+            favoritesDataStore.getFavoriteMovieIds()
         } returns flowOf(emptySet())
     }
 
@@ -74,6 +77,7 @@ class HomeViewModelTest {
             favoritesDataStore = favoritesDataStore
         )
 
+        //παραλείπει τον εικονικό χρόνο προς τα εμπρός και εκτελεί όλες τις εκκρεμείς εργασίες μέχρι να αδειάσει εντελώς η ουρά
         advanceUntilIdle()
 
         // Then

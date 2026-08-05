@@ -12,6 +12,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import junit.framework.TestCase
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -25,9 +28,12 @@ import java.io.IOException
  */
 class MovieRepositoryImplTest {
 
+    // relaxed
+    // Δημιουργεί ένα «χαλαρό» mock αντικείμενο που δεν κρασάρει αν η εφαρμογή
+    // καλέσει μια μέθοδό του την οποία ξέχασες να ορίσεις με every / coEvery
     private val api: TmdbApiService = mockk()
-    private val movieDao: MovieDao = mockk(relaxed = true)
-    private val movieImageCache: MovieImageCache = mockk(relaxed = true)
+    private val movieDao: MovieDao = mockk()
+    private val movieImageCache: MovieImageCache = mockk()
 
     private lateinit var repository: MovieRepositoryImpl
 
@@ -61,14 +67,19 @@ class MovieRepositoryImplTest {
                 totalPages = 10
             )
 
+            // 1. Όταν το API ζητήσει την 1η σελίδα, επίστρεψε το εικονικό 'response'
             coEvery {
                 api.getPopularMovies(page = 1)
             } returns response
 
+// 2. Όταν η βάση δεδομένων (DAO) κληθεί να διαγράψει & να γράψει τις νέες ταινίες
+// (όποιες κι αν είναι αυτές -> any()), μην κάνεις τίποτα (returns Unit)
             coEvery {
                 movieDao.replaceAll(any())
             } returns Unit
 
+// 3. Όταν ο μηχανισμός εικόνων κληθεί να κάνει prefetch τα URLs
+// (όποια κι αν είναι αυτά -> any()), μην κάνεις τίποτα (returns Unit)
             coEvery {
                 movieImageCache.prefetch(any())
             } returns Unit
@@ -77,22 +88,23 @@ class MovieRepositoryImplTest {
             val result = repository.getPopularMovies(page = 1)
 
             // Then
-            TestCase.assertTrue(result is DataResult.Success)
+            assertTrue(result is DataResult.Success)
 
             val page = (result as DataResult.Success).data
             val movie = page.movies.first()
 
-            TestCase.assertEquals(1, page.page)
-            TestCase.assertEquals(10, page.totalPages)
-            TestCase.assertFalse(page.isFromCache)
-            TestCase.assertEquals(1, page.movies.size)
+            assertEquals(1, page.page)
+            assertEquals(10, page.totalPages)
+            assertFalse(page.isFromCache)
+            assertEquals(1, page.movies.size)
 
-            TestCase.assertEquals(1, movie.id)
-            TestCase.assertEquals("Inception", movie.title)
-            TestCase.assertEquals(expectedImageUrl, movie.imageUrl)
-            TestCase.assertEquals("2010-07-16", movie.releaseDate)
-            TestCase.assertEquals(8.8, movie.voteAverage)
+            assertEquals(1, movie.id)
+            assertEquals("Inception", movie.title)
+            assertEquals(expectedImageUrl, movie.imageUrl)
+            assertEquals("2010-07-16", movie.releaseDate)
+            assertEquals(8.8, movie.voteAverage)
 
+            // για να επιβεβαιώσει ότι μια (suspend) μέθοδος κλήθηκε ακριβώς 1 φορά κατά τη διάρκεια του test.
             coVerify(exactly = 1) {
                 movieDao.replaceAll(
                     match { entities ->
@@ -136,16 +148,16 @@ class MovieRepositoryImplTest {
             val result = repository.getPopularMovies(page = 1)
 
             // Then
-            TestCase.assertTrue(result is DataResult.Success)
+            assertTrue(result is DataResult.Success)
 
             val page = (result as DataResult.Success).data
             val movie = page.movies.first()
 
-            TestCase.assertTrue(page.isFromCache)
-            TestCase.assertEquals(1, page.page)
-            TestCase.assertEquals(1, page.totalPages)
-            TestCase.assertEquals(1, page.movies.size)
-            TestCase.assertEquals("Inception Cached", movie.title)
+            assertTrue(page.isFromCache)
+            assertEquals(1, page.page)
+            assertEquals(1, page.totalPages)
+            assertEquals(1, page.movies.size)
+            assertEquals("Inception Cached", movie.title)
 
             coVerify(exactly = 1) {
                 movieDao.getCachedMovies()
